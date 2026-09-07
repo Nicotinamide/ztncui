@@ -17,12 +17,34 @@ const session = require('express-session');
 const helmet = require('helmet');
 
 const index = require('./routes/index');
+const fs = require('fs');
+const crypto = require('crypto');
 const users = require('./routes/users');
 const zt_controller = require('./routes/zt_controller');
 
 const app = express();
 
-const session_secret = Math.random().toString(36).substring(2,12);
+// Secure persistent session secret
+function getSessionSecret() {
+  if (process.env.SESSION_SECRET && process.env.SESSION_SECRET.trim()) {
+    return process.env.SESSION_SECRET.trim();
+  }
+  const secretFile = path.join(__dirname, 'etc', 'session.secret');
+  try {
+    if (fs.existsSync(secretFile)) {
+      const s = fs.readFileSync(secretFile, 'utf8').trim();
+      if (s.length >= 32) return s;
+    }
+  } catch {}
+
+  const newSecret = crypto.randomBytes(32).toString('hex');
+  try {
+    fs.writeFileSync(secretFile, newSecret, { mode: 0o600, encoding: 'utf8' });
+  } catch {}
+  return newSecret;
+}
+
+const session_secret = getSessionSecret();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -36,7 +58,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(session({
   resave: false,
   saveUninitialized: false,
-  secret: session_secret
+  secret: session_secret,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: !!process.env.HTTPS_PORT
+  }
 }));
 app.use(expressValidator());
 app.use(cookieParser());
@@ -45,6 +72,31 @@ app.use('/fonts', express.static(path.join(__dirname, 'node_modules/bootstrap/fo
 app.use('/bscss', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
 app.use('/jqjs', express.static(path.join(__dirname, 'node_modules/jquery/dist')));
 app.use('/bsjs', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js')));
+
+// CSRF Defense: Origin & Referer verification for state-changing requests
+app.use((req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  // Allow login endpoint directly
+  if (req.path === '/login') {
+    return next();
+  }
+
+  const origin = req.headers.origin;
+  const host = req.headers.host;
+  if (origin && host) {
+    try {
+      const originHost = new URL(origin).host;
+      if (originHost !== host) {
+        return res.status(403).send('Forbidden: Cross-site request rejected.');
+      }
+    } catch {
+      return res.status(403).send('Forbidden: Invalid Origin header.');
+    }
+  }
+  next();
+});
 
 app.use('/', index);
 app.use('/users', users);

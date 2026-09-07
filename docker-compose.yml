@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  ztncui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nicotinamide/ztncui:latest
+    container_name: ztncui
+    restart: unless-stopped
+    ports:
+      # We recommend binding to 127.0.0.1 for security, or proxying through Nginx / ZeroTier VPN
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+      - HTTP_PORT=3000
+      - HTTP_ALL_INTERFACES=yes
+      # Connect to host ZeroTier One daemon (or another container)
+      - ZT_ADDR=host.docker.internal:9993
+      # Optionally pass ZT_TOKEN or mount authtoken.secret
+      # - ZT_TOKEN=your_zerotier_authtoken_here
+      # - SESSION_SECRET=your_custom_secure_session_secret_here
+    volumes:
+      # Persistent configuration (passwords, session secret, member nicknames)
+      - ./data/etc:/app/etc
+      # Mount host ZeroTier One authtoken
+      - /var/lib/zerotier-one/authtoken.secret:/var/lib/zerotier-one/authtoken.secret:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

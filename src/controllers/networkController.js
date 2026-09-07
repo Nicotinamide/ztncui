@@ -13,46 +13,58 @@ const util = require('util');
 storage.initSync({dir: 'etc/storage'});
 
 async function get_network_with_members(nwid) {
-  const [network, peers, members] = await Promise.all([
+  const [network, peersRaw, rawMembers] = await Promise.all([
     zt.network_detail(nwid),
-    zt.peers(),
-    zt.members(nwid)
-      .then(member_ids => {
-        // Fix weird data returned by ZeroTier 1.12
-        if (Array.isArray(member_ids)) {
-          let obj = {};
-          for (let id of member_ids) {
-            let key = Object.keys(id)[0];
-            let value = Object.values(id)[0];
-            obj[key] = value;
-          }
-          member_ids = obj;
-        }
-
-        return Promise.all(
-          Object.keys(member_ids)
-            .map(id => Promise.all([
-              zt.member_detail(nwid, id),
-              storage.getItem(id)
-            ]))
-        );
-      }).then(results => results.map(([member, name]) => {
-        member.name = name || '';
-        return member;
-      }))
+    zt.peers().catch(() => []),
+    zt.members(nwid).catch(() => ({}))
   ]);
-  for (const member of members) {
-    member.peer = peers.find(x => x.address === member.address);
+
+  const peers = Array.isArray(peersRaw) ? peersRaw : [];
+  let member_ids = rawMembers || {};
+
+  // Fix weird data returned by ZeroTier 1.12+ (if array of { [id]: val } or strings)
+  if (Array.isArray(member_ids)) {
+    let obj = {};
+    for (let item of member_ids) {
+      if (typeof item === 'object' && item !== null) {
+        const key = Object.keys(item)[0];
+        if (key) obj[key] = item[key];
+      } else if (typeof item === 'string') {
+        obj[item] = item;
+      }
+    }
+    member_ids = obj;
   }
-  return {network, members};
+
+  const ids = (typeof member_ids === 'object' && member_ids !== null) ? Object.keys(member_ids) : [];
+
+  const memberPromises = ids.map(async id => {
+    try {
+      const [member, name] = await Promise.all([
+        zt.member_detail(nwid, id).catch(() => null),
+        storage.getItem(id).catch(() => '')
+      ]);
+      if (!member) return null;
+      member.name = name || '';
+      member.peer = peers.find(x => x && x.address === member.address) || null;
+      return member;
+    } catch {
+      return null;
+    }
+  });
+
+  const memberResults = await Promise.all(memberPromises);
+  const members = memberResults.filter(Boolean);
+
+  return { network, members };
 }
 
 async function get_network_member(nwid, memberid) {
   const [network, member, peer, name] = await Promise.all([
     zt.network_detail(nwid),
-    zt.member_detail(nwid, memberid),
-    zt.peer(memberid),
-    storage.getItem(memberid)
+    zt.member_detail(nwid, memberid).catch(() => ({})),
+    zt.peer(memberid).catch(() => null),
+    storage.getItem(memberid).catch(() => '')
   ]);
   member.name = name || '';
   member.peer = peer;

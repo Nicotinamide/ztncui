@@ -16,7 +16,6 @@
     "express": "^4.16.3",
     "express-session": "^1.15.6",
     "express-validator": "^4.3.0",
-    "got": "^7.1.0",
     "helmet": "^3.23.0",
     "ip-address": "^5.8.9",
     "jquery": "^3.6.1",
