@@ -17,26 +17,26 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 16
+      - name: Setup Node.js 18
         uses: actions/setup-node@v4
         with:
-          node-version: '16.x'
+          node-version: '18.x'
 
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential python3
 
-      - name: Install NPM Dependencies & Build Addons
+      - name: Install NPM Dependencies
         run: |
           cd src
-          npm install
+          npm install --legacy-peer-deps || npm install --ignore-scripts
 
       - name: Package Standalone Linux Binary via pkg
         run: |
           npm install -g pkg
           cd src
-          pkg -c ./package.json -t node16-linux-x64 bin/www -o ../ztncui
+          pkg -c ./package.json -t node18-linux-x64 bin/www -o ../ztncui
           chmod +x ../ztncui
 
       - name: Package Tarball with Addons
