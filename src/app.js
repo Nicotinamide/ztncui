@@ -29,18 +29,30 @@ function getSessionSecret() {
   if (process.env.SESSION_SECRET && process.env.SESSION_SECRET.trim()) {
     return process.env.SESSION_SECRET.trim();
   }
-  const secretFile = path.join(__dirname, 'etc', 'session.secret');
-  try {
-    if (fs.existsSync(secretFile)) {
-      const s = fs.readFileSync(secretFile, 'utf8').trim();
-      if (s.length >= 32) return s;
-    }
-  } catch {}
+  const secretPaths = [
+    path.join(process.cwd(), 'etc', 'session.secret'),
+    path.join(__dirname, 'etc', 'session.secret'),
+    path.join(__dirname, '..', 'etc', 'session.secret')
+  ];
+  for (const p of secretPaths) {
+    try {
+      if (fs.existsSync(p)) {
+        const s = fs.readFileSync(p, 'utf8').trim();
+        if (s.length >= 32) return s;
+      }
+    } catch {}
+  }
 
   const newSecret = crypto.randomBytes(32).toString('hex');
-  try {
-    fs.writeFileSync(secretFile, newSecret, { mode: 0o600, encoding: 'utf8' });
-  } catch {}
+  for (const p of secretPaths) {
+    try {
+      const dir = path.dirname(p);
+      if (fs.existsSync(dir)) {
+        fs.writeFileSync(p, newSecret, { mode: 0o600, encoding: 'utf8' });
+        break;
+      }
+    } catch {}
+  }
   return newSecret;
 }
 
