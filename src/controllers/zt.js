@@ -5,6 +5,8 @@
   Modernized with native fetch & ZeroTier 1.16+ compatibility.
 */
 
+const http = require('http');
+const https = require('https');
 const ipaddr = require('ip-address');
 const token = require('./token');
 
@@ -17,51 +19,94 @@ function getBaseUrl() {
   return 'http://' + ZT_ADDR;
 }
 
-// Universal native fetch wrapper for ZeroTier REST API
+// Universal HTTP caller (supports fetch or native http/https fallback for Node 14/16/18/20+)
 async function callZt(endpoint, method = 'GET', bodyData = null) {
   const tok = await token.get();
-  const url = `${getBaseUrl()}${endpoint}`;
+  const fullUrl = `${getBaseUrl()}${endpoint}`;
+  const payload = (bodyData !== null && bodyData !== undefined)
+    ? (typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData))
+    : null;
 
-  const headers = {
-    'X-ZT1-Auth': tok,
-    'Content-Type': 'application/json',
-  };
+  // 1. If global fetch is available (Node 18+)
+  if (typeof fetch === 'function') {
+    const headers = {
+      'X-ZT1-Auth': tok,
+      'Content-Type': 'application/json',
+    };
+    const options = {
+      method: method.toUpperCase(),
+      headers: headers,
+    };
+    if (payload !== null) options.body = payload;
 
-  const options = {
-    method: method.toUpperCase(),
-    headers: headers,
-  };
-
-  if (bodyData !== null && bodyData !== undefined) {
-    options.body = typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData);
-  }
-
-  const res = await fetch(url, options);
-
-  if (!res.ok) {
-    if (res.status === 404 && endpoint.startsWith('/peer/')) {
-      return null;
-    }
-    let errMsg = `ZeroTier API returned ${res.status}`;
-    try {
-      const errJson = await res.json();
-      errMsg = (errJson && (errJson.message || errJson.error)) || JSON.stringify(errJson);
-    } catch {
+    const res = await fetch(fullUrl, options);
+    if (!res.ok) {
+      if (res.status === 404 && endpoint.startsWith('/peer/')) return null;
+      let errMsg = `ZeroTier API returned ${res.status}`;
       try {
-        errMsg = await res.text();
-      } catch {}
+        const errJson = await res.json();
+        errMsg = (errJson && (errJson.message || errJson.error)) || JSON.stringify(errJson);
+      } catch {
+        try { errMsg = await res.text(); } catch {}
+      }
+      const err = new Error(errMsg);
+      err.statusCode = res.status;
+      throw err;
     }
-    const err = new Error(errMsg);
-    err.statusCode = res.status;
-    throw err;
+    const text = await res.text();
+    try { return text ? JSON.parse(text) : {}; } catch { return text; }
   }
 
-  const text = await res.text();
-  try {
-    return text ? JSON.parse(text) : {};
-  } catch {
-    return text;
-  }
+  // 2. Fallback to native http/https for Node 14/16
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(fullUrl);
+    const client = urlObj.protocol === 'https:' ? https : http;
+
+    const headers = {
+      'X-ZT1-Auth': tok,
+      'Content-Type': 'application/json',
+    };
+    if (payload !== null) {
+      headers['Content-Length'] = Buffer.byteLength(payload);
+    }
+
+    const req = client.request({
+      hostname: urlObj.hostname,
+      port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      method: method.toUpperCase(),
+      headers: headers,
+    }, (res) => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            resolve(data ? JSON.parse(data) : {});
+          } catch {
+            resolve(data);
+          }
+        } else {
+          if (res.statusCode === 404 && endpoint.startsWith('/peer/')) {
+            return resolve(null);
+          }
+          let errMsg = `ZeroTier API returned ${res.statusCode}: ${data}`;
+          try {
+            const errJson = JSON.parse(data);
+            if (errJson && (errJson.message || errJson.error)) errMsg = errJson.message || errJson.error;
+          } catch {}
+          const err = new Error(errMsg);
+          err.statusCode = res.statusCode;
+          reject(err);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    if (payload !== null) req.write(payload);
+    req.end();
+  });
 }
 
 const get_zt_status = async function() {
