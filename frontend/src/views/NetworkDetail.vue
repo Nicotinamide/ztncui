@@ -107,17 +107,24 @@
           <h2 class="card-title">{{ t('detail.tab_members') }} ({{ members.length }})</h2>
           <p class="card-subtitle">{{ t('detail.members_subtitle') }}</p>
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-          <button class="btn btn-secondary btn-sm" @click="loadMembers" :disabled="membersLoading" :title="t('common.refresh')">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <button
+            class="btn btn-secondary"
+            @click="loadMembers"
+            :disabled="membersLoading"
+            :title="t('common.refresh')"
+            style="height: 38px; padding: 0 14px; white-space: nowrap; flex-shrink: 0;"
+          >
             <span>🔄</span>
-            <span v-if="!membersLoading">{{ t('common.refresh') }}</span>
+            <span v-if="!membersLoading" style="white-space: nowrap;">{{ t('common.refresh') }}</span>
           </button>
-          <div style="max-width: 280px; width: 100%;">
+          <div style="width: 280px; max-width: 100%;">
             <input
               v-model="memberSearch"
               type="text"
               class="form-control"
               :placeholder="t('detail.search_members')"
+              style="height: 38px;"
             />
           </div>
         </div>
