@@ -9,13 +9,17 @@ const http = require('http');
 const https = require('https');
 const token = require('./token');
 
-const ZT_ADDR = process.env.ZT_ADDR || 'localhost:9993';
+const ZT_ADDR = process.env.ZT_ADDR || '127.0.0.1:9993';
 
 function getBaseUrl() {
-  if (ZT_ADDR.startsWith('http://') || ZT_ADDR.startsWith('https://')) {
-    return ZT_ADDR;
+  let addr = ZT_ADDR;
+  if (addr.includes('localhost')) {
+    addr = addr.replace('localhost', '127.0.0.1');
   }
-  return 'http://' + ZT_ADDR;
+  if (addr.startsWith('http://') || addr.startsWith('https://')) {
+    return addr;
+  }
+  return 'http://' + addr;
 }
 
 // Universal HTTP caller (supports fetch or native http/https fallback for Node 14/16/18/20+)
@@ -128,16 +132,18 @@ exports.network_list = async function() {
   let nwids = await callZt('/controller/network');
   if (!Array.isArray(nwids)) nwids = [];
 
-  const networks = [];
-  for (let nwid of nwids) {
+  const networkPromises = nwids.map(async (nwid) => {
     try {
       const net = await callZt('/controller/network/' + nwid);
-      networks.push({ name: net.name, nwid: net.nwid });
+      return { name: net.name, nwid: net.nwid, private: net.private };
     } catch (err) {
       console.error(`Error resolving network ${nwid}:`, err.message);
+      return null;
     }
-  }
-  return networks;
+  });
+
+  const results = await Promise.all(networkPromises);
+  return results.filter(Boolean);
 };
 
 const network_detail = async function(nwid) {
@@ -254,9 +260,18 @@ exports.network_easy_setup = async function(nwid, routes, ipAssignmentPools, v4A
   });
 };
 
+let _cachedPeers = null;
+let _peersCacheTime = 0;
+
 exports.peers = async function() {
+  const now = Date.now();
+  if (_cachedPeers && (now - _peersCacheTime < 10000)) {
+    return _cachedPeers;
+  }
   const res = await callZt('/peer');
-  return Array.isArray(res) ? res : [];
+  _cachedPeers = Array.isArray(res) ? res : [];
+  _peersCacheTime = now;
+  return _cachedPeers;
 };
 
 exports.peer = async function(id) {
