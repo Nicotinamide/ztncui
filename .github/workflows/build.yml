@@ -27,6 +27,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential python3
 
+      - name: Build Frontend SPA
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
       - name: Install NPM Dependencies
         run: |
           cd src

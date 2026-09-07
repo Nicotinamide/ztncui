@@ -93,7 +93,7 @@ app.use((req, res, next) => {
     return next();
   }
   // Allow login endpoint directly
-  if (req.path === '/login') {
+  if (req.path === '/login' || req.path === '/api/v1/auth/login') {
     return next();
   }
 
@@ -112,18 +112,32 @@ app.use((req, res, next) => {
   next();
 });
 
-// Switch language route
-app.get('/set-lang/:lang', (req, res) => {
-  const lang = (req.params.lang === 'zh' || req.params.lang === 'zh-CN') ? 'zh-CN' : 'en-US';
-  if (req.session) req.session.lang = lang;
-  res.cookie('ztncui_lang', lang, { maxAge: 365 * 24 * 3600 * 1000, httpOnly: false });
-  const redirect = req.query.redirect || req.headers.referer || '/';
-  res.redirect(redirect);
-});
+// RESTful API (v1)
+const api = require('./routes/api');
+app.use('/api/v1', api);
 
-app.use('/', index);
-app.use('/users', users);
-app.use('/controller', zt_controller);
+// Serve modern SPA if dist directory exists
+const distDir = path.join(__dirname, 'dist');
+if (fs.existsSync(distDir)) {
+  app.use(express.static(distDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+} else {
+  // Switch language route for legacy UI
+  app.get('/set-lang/:lang', (req, res) => {
+    const lang = (req.params.lang === 'zh' || req.params.lang === 'zh-CN') ? 'zh-CN' : 'en-US';
+    if (req.session) req.session.lang = lang;
+    res.cookie('ztncui_lang', lang, { maxAge: 365 * 24 * 3600 * 1000, httpOnly: false });
+    const redirect = req.query.redirect || req.headers.referer || '/';
+    res.redirect(redirect);
+  });
+
+  app.use('/', index);
+  app.use('/users', users);
+  app.use('/controller', zt_controller);
+}
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

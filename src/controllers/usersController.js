@@ -11,9 +11,40 @@ const util = require('util');
 const passwd_file = 'etc/passwd';
 const min_pass_len = 10;
 
+const path = require('path');
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
 const chmod = util.promisify(fs.chmod);
+
+function getPasswdFile() {
+  const candidates = [
+    path.join(process.cwd(), 'etc', 'passwd'),
+    path.join(__dirname, '..', 'etc', 'passwd'),
+    path.join(__dirname, '..', '..', 'etc', 'passwd'),
+    path.resolve('etc/passwd')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  // If none exists, check default.passwd
+  const defaultCandidates = [
+    path.join(__dirname, '..', 'etc', 'default.passwd'),
+    path.join(process.cwd(), 'src', 'etc', 'default.passwd'),
+    path.join(process.cwd(), 'etc', 'default.passwd')
+  ];
+  for (const d of defaultCandidates) {
+    if (fs.existsSync(d)) {
+      try {
+        const dest = candidates[0];
+        const destDir = path.dirname(dest);
+        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+        fs.copyFileSync(d, dest);
+        return dest;
+      } catch {}
+    }
+  }
+  return candidates[0];
+}
 
 let _users = null;
 
@@ -22,7 +53,8 @@ const get_users = async function() {
     return _users;
   } else {
     try {
-      _users = JSON.parse(await readFile(passwd_file, 'utf8'));
+      const pFile = getPasswdFile();
+      _users = JSON.parse(await readFile(pFile, 'utf8'));
       return _users;
     } catch(err) {
       throw(err);
@@ -33,9 +65,9 @@ exports.get_users = get_users;
 
 const update_users = async function(users) {
   try {
-    await writeFile(passwd_file, JSON.stringify(users), 'utf8');
-    await chmod(passwd_file, 0o600);
-
+    const pFile = getPasswdFile();
+    await writeFile(pFile, JSON.stringify(users), 'utf8');
+    try { await chmod(pFile, 0o600); } catch {}
   } catch (err) {
     throw err;
   }
