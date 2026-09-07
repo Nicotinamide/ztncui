@@ -1,0 +1,86 @@
+name: Build Linux Binary
+
+on:
+  push:
+    branches: [ master, main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 16
+        uses: actions/setup-node@v4
+        with:
+          node-version: '16.20.2'
+          cache: 'npm'
+          cache-dependency-path: 'src/package-lock.json'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3
+
+      - name: Install NPM Dependencies & Build Addons
+        run: |
+          cd src
+          npm install
+
+      - name: Package Standalone Linux Binary via pkg
+        run: |
+          cd src
+          npx @vercel/pkg -c ./package.json -t node16-linux-x64 bin/www -o ../ztncui
+          chmod +x ../ztncui
+
+      - name: Package Tarball with Addons
+        run: |
+          mkdir -p dist/argon2-addon
+          cp ztncui dist/
+          if [ -f src/node_modules/argon2/build/Release/argon2.node ]; then
+            cp src/node_modules/argon2/build/Release/argon2.node dist/argon2-addon/
+          fi
+          cd dist
+          tar -czvf ../ztncui-linux-x64.tar.gz ztncui argon2-addon
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ztncui-linux-x64
+          path: |
+            ztncui
+            ztncui-linux-x64.tar.gz
+          retention-days: 30
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: latest
+          name: "ztncui-linux-x64 (Security Patched)"
+          body: |
+            ### ztncui Patched Standalone Binary (Linux x86_64)
+
+            This binary contains all security and compatibility patches:
+            - Fix Open Redirect vulnerability on `/login`
+            - Add IP-based brute force rate limiting
+            - Dynamic persistent 32-byte session secret & hardened cookie flags
+            - Native `fetch` + universal HTTP fallback (deprecated `got` removed)
+            - Support for ZeroTier 1.14+ / 1.16+ member status formatting
+
+            #### Usage in Docker:
+            ```bash
+            # Copy to container and restart
+            docker cp ztncui ztncui:/opt/key-networks/ztncui/ztncui
+            docker restart ztncui
+            ```
+          files: |
+            ztncui
+            ztncui-linux-x64.tar.gz
