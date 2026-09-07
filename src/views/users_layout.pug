@@ -1,22 +1,21 @@
 //-
   ztncui - ZeroTier network controller UI
-  Copyright (C) 2017-2021  Key Networks (https://key-networks.com)
-  Licensed under GPLv3 - see LICENSE for details.
+  Modern Users Layout
 
 extends head_layout
 
 block nav_items
-  +nav_item('controller_home', 'Home', '/controller')
-  +nav_item('users', 'Users', '/users')
-  +nav_item('networks', 'Networks', '/controller/networks')
-  +nav_item('create_user', 'Create user', '/users/create')
+  +nav_item('controller_home', t('nav.brand'), '/controller')
+  +nav_item('networks', t('nav.networks'), '/controller/networks')
+  +nav_item('users', t('nav.users'), '/users')
+  +nav_item('create_user', t('users.add_user'), '/users/create')
 
 block body_content
-  .container(style='margin-top:50px')
+  .container(style='margin-top: 24px; margin-bottom: 40px;')
     .row
       .col-sm-12
         if error
-           b #{error}
+          .alert.alert-danger(style='border-radius: 8px;')
+            strong ❌ #{error}
         else
-          h1= title
           block users_content

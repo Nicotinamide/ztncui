@@ -1,47 +1,68 @@
 //-
   ztncui - ZeroTier network controller UI
-  Copyright (C) 2017-2021  Key Networks (https://key-networks.com)
-  Licensed under GPLv3 - see LICENSE for details.
+  Modern Networks List View
 
 extends controller_layout
 
 block content
-  h1= title
+  .modern-card
+    .modern-card-header
+      div
+        h2= t('networks.title')
+        p.modern-card-subtitle= t('networks.subtitle')
+      div
+        a.btn.btn-primary(href='/controller/network/create')
+          span.glyphicon.glyphicon-plus(style='margin-right: 6px;')
+          | #{t('networks.add_network')}
 
-  if error
-    b #{error}
-  else
-    table.table.table-responsive.table-striped.table-hover
-      tr
-        th(width='3%')
-          = ''
-        th(width='20%')
-          | Network name
-        th(width='20%')
-          | Network ID
-        th(width='8%')
-          = ''
-        th(width='12%')
-          = ''
-        th(width='37%')
-          = ''
-      each network in networks
-        - const nwurl = '/controller/network/' + network.nwid;
-        tr
-          td
-            a(href=nwurl + '/delete')
-              i.glyphicon.glyphicon-trash
-          td
-            a(href=nwurl) #{network.name}
-          td
-            = network.nwid
-          td
-            a(href=nwurl) detail
-          td
-            a(href=nwurl + '/easy') easy setup
-          td
-            a(href=nwurl + "#members") members
-
+    if error
+      .alert.alert-danger(style='border-radius: 8px;')
+        strong ❌ #{error}
+    else
+      if networks && networks.length > 0
+        .table-responsive
+          table.table.table-hover
+            thead
+              tr
+                th(style='width: 25%;')= t('networks.network_name')
+                th(style='width: 35%;')= t('networks.network_id')
+                th(style='width: 15%;')= t('network_detail.status_label')
+                th(style='width: 25%; text-align: right;')= t('common.action')
+            tbody
+              each network in networks
+                - const nwurl = '/controller/network/' + network.nwid;
+                tr
+                  td
+                    a(href=nwurl style='font-weight: 600; font-size: 15px; color: var(--primary); text-decoration: none;')
+                      | #{network.name || 'Unnamed Network'}
+                  td
+                    div(style='display: flex; align-items: center; gap: 8px;')
+                      span.badge-id= network.nwid
+                      button.copy-btn(type='button' onclick="copyToClipboard('" + network.nwid + "', '" + t('common.copied') + "')" title=t('common.copy'))
+                        span.glyphicon.glyphicon-copy
+                  td
+                    if network.private
+                      span.badge-pill-mode.mode-private 🔒 #{t('network_detail.private_mode').split(' ')[0]}
+                    else
+                      span.badge-pill-mode.mode-public 🌐 #{t('network_detail.public_mode').split(' ')[0]}
+                  td(style='text-align: right;')
+                    div.btn-group.btn-group-sm
+                      a.btn.btn-default(href=nwurl title=t('networks.detail_btn'))
+                        span.glyphicon.glyphicon-cog(style='margin-right: 4px;')
+                        | #{t('networks.detail_btn')}
+                      a.btn.btn-default(href=nwurl + '/easy' title=t('networks.easy_setup_btn'))
+                        span.glyphicon.glyphicon-wrench(style='margin-right: 4px;')
+                        | #{t('networks.easy_setup_btn')}
+                      a.btn.btn-default(href=nwurl + '#members' title=t('networks.members_btn'))
+                        span.glyphicon.glyphicon-user(style='margin-right: 4px;')
+                        | #{t('networks.members_btn')}
+                      a.btn.btn-default(href=nwurl + '/delete' title=t('common.delete') style='color: var(--danger);' onclick="return confirm('" + t('networks.delete_confirm') + "')")
+                        span.glyphicon.glyphicon-trash
       else
-        .alert.alert-info
-          strong There are no networks on this network controller - click "Add network" above to create a new network.
+        .text-center(style='padding: 48px 20px; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1;')
+          div(style='font-size: 40px; margin-bottom: 12px;') 🌐
+          h3(style='font-weight: 700; color: var(--text-main); margin-bottom: 8px;')= t('networks.empty_title')
+          p(style='color: var(--text-muted); max-width: 480px; margin: 0 auto 20px;')= t('networks.empty_hint')
+          a.btn.btn-primary(href='/controller/network/create')
+            span.glyphicon.glyphicon-plus(style='margin-right: 6px;')
+            | #{t('networks.add_network')}

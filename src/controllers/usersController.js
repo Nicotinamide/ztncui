@@ -34,7 +34,7 @@ exports.get_users = get_users;
 const update_users = async function(users) {
   try {
     await writeFile(passwd_file, JSON.stringify(users), 'utf8');
-    await chmod(passwd_file, 0600);
+    await chmod(passwd_file, 0o600);
 
   } catch (err) {
     throw err;
@@ -169,6 +169,7 @@ exports.user_delete = async function(req, res) {
 
   if (user && (req.session.user.name === user.name)) {
     res.render('user_delete', { title: 'Delete user', navigate: navigate, user: user, self_delete: true });
+    return;
   }
 
   if (req.body.delete === 'delete') {

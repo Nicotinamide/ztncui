@@ -1,45 +1,43 @@
 //-
   ztncui - ZeroTier network controller UI
-  Copyright (C) 2017-2021  Key Networks (https://key-networks.com)
-  Licensed under GPLv3 - see LICENSE for details.
+  Modernized Login View
 
 extends login_layout
 
 block login_content
+  .login-card
+    .login-header
+      .login-logo
+        img(src='/images/key-logo.svg' alt='ZeroTier Logo' width='36px' height='36px')
+      h1.login-title= t('login.title')
+      p.login-subtitle= t('login.subtitle')
 
-  if error
-     b #{error}
-  else
-    .row
-      .col-sm-12
-        h1= title
+    if message
+      .alert.alert-warning(style='border-radius: 8px; font-size: 13px; line-height: 1.5; margin-bottom: 20px;')
+        strong ⚠️ #{message}
+    if error
+      .alert.alert-danger(style='border-radius: 8px; font-size: 13px; margin-bottom: 20px;')
+        strong ❌ #{error}
 
-        if message
-          .alert.alert-info
-            strong= message
+    form(method='POST' action='')
+      .form-group
+        label(for='username')= t('login.username')
+        .input-group
+          span.input-group-addon
+            i.glyphicon.glyphicon-user
+          input#username.form-control(type='text' name='username' placeholder=t('login.username_placeholder') required autofocus)
 
-    form.form-horizontal(method='POST' action='')
-      .form-group.row
-        .col-sm-2
-          label.control-label(for='username') Username:
-        .col-sm-10
-          .input-group
-            span.input-group-addon
-              i.glyphicon.glyphicon-user
-            input#username.form-control(type='text' name='username' placeholder='Enter your username')
+      .form-group(style='margin-top: 16px;')
+        label(for='password')= t('login.password')
+        .input-group
+          span.input-group-addon
+            i.glyphicon.glyphicon-lock
+          input#password.form-control(type='password' name='password' placeholder=t('login.password_placeholder') required)
 
-      .form-group.row
-        .col-sm-2
-          label.control-label(for='password') Password:
-        .col-sm-10
-          .input-group
-            span.input-group-addon
-              i.glyphicon.glyphicon-lock
-            input#password.form-control(type='password' name='password' placeholder='Enter your password')
+      .form-group(style='margin-top: 24px;')
+        button.btn.btn-primary.btn-block(type='submit')
+          span.glyphicon.glyphicon-log-in(style='margin-right: 6px;')
+          | #{t('login.login_btn')}
 
-      .form-group.row
-        .col-sm-2
-        .col-sm-10
-          button.btn.btn-primary(type='submit') Login
-          = ' '
-          a.btn.btn-default(href='/' name='cancel' role='button') Cancel
+    .text-center(style='margin-top: 20px; font-size: 12px; color: var(--text-muted);')
+      p= t('login.default_hint')

@@ -7,7 +7,6 @@
 
 const http = require('http');
 const https = require('https');
-const ipaddr = require('ip-address');
 const token = require('./token');
 
 const ZT_ADDR = process.env.ZT_ADDR || 'localhost:9993';
@@ -41,6 +40,9 @@ async function callZt(endpoint, method = 'GET', bodyData = null) {
 
     const res = await fetch(fullUrl, options);
     if (!res.ok) {
+      if (res.status === 401) {
+        token.invalidate();
+      }
       if (res.status === 404 && endpoint.startsWith('/peer/')) return null;
       let errMsg = `ZeroTier API returned ${res.status}`;
       try {
@@ -88,6 +90,9 @@ async function callZt(endpoint, method = 'GET', bodyData = null) {
             resolve(data);
           }
         } else {
+          if (res.statusCode === 401) {
+            token.invalidate();
+          }
           if (res.statusCode === 404 && endpoint.startsWith('/peer/')) {
             return resolve(null);
           }

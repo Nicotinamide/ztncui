@@ -1,33 +1,35 @@
 //-
   ztncui - ZeroTier network controller UI
-  Copyright (C) 2017-2021  Key Networks (https://key-networks.com)
-  Licensed under GPLv3 - see LICENSE for details.
+  Modern Network Create View
 
 extends controller_layout
 
 block content
-  .row
-    .col-sm-12
-      h1= title
+  .modern-card(style='max-width: 600px; margin: 0 auto;')
+    .modern-card-header
+      div
+        h2= t('networks.add_network')
+        p.modern-card-subtitle= t('networks.subtitle')
+      div
+        a.btn.btn-default(href='/controller/networks')= t('common.cancel')
 
-  if error
-     b #{error}
-  else
-
-    form(method='POST' action='')
-      .form-group.row
-        .col-sm-2
-          label(for='name') Network name:
-        .col-sm-10
-          input#name.form-control(type='text' name='name' placeholder='Enter new network name' value=(undefined===name ? '' : name.name))
-
-      .form-group.row
-        .col-sm-12
-          button.btn.btn-primary(type='submit') Create Network
+    if error
+      .alert.alert-danger(style='border-radius: 8px;')
+        strong ❌ #{error}
 
     if errors
-      .row
-        .col-sm-12
-          ul
-            for err in errors
-              li!= err.msg
+      .alert.alert-warning(style='border-radius: 8px;')
+        ul(style='margin: 0; padding-left: 20px;')
+          for err in errors
+            li!= err.msg
+
+    form(method='POST' action='' style='margin-top: 20px;')
+      .form-group
+        label(for='name')= t('networks.network_name')
+        input#name.form-control(type='text' name='name' placeholder='e.g. Home Lab / Office LAN' value=(undefined===name ? '' : name.name) required autofocus)
+
+      div(style='margin-top: 24px; display: flex; gap: 12px;')
+        button.btn.btn-primary(type='submit')
+          span.glyphicon.glyphicon-plus(style='margin-right: 6px;')
+          | #{t('networks.add_network')}
+        a.btn.btn-default(href='/controller/networks')= t('common.cancel')

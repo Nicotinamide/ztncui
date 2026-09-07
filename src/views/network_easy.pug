@@ -1,20 +1,22 @@
 //-
   ztncui - ZeroTier network controller UI
-  Copyright (C) 2017-2021  Key Networks (https://key-networks.com)
-  Licensed under GPLv3 - see LICENSE for details.
+  Modern Easy Setup Wizard View
 
 extends network_layout
 
 block net_content
   script.
     function randomOctet() {
-      return Math.floor(Math.random() * 255);
+      return Math.floor(Math.random() * 254) + 1;
     }
 
     function randomIPv4() {
-      const networkCIDR = document.getElementById('networkCIDR');
       const CIDR = '10.' + randomOctet() + '.' + randomOctet() + '.0/24';
-      networkCIDR.value = CIDR;
+      setSubnet(CIDR);
+    }
+
+    function setSubnet(CIDR) {
+      document.getElementById('networkCIDR').value = CIDR;
       CIDRtoPool(CIDR);
     }
 
@@ -28,7 +30,9 @@ block net_content
     }
 
     function CIDRtoPool(CIDR) {
-      const [start, prefix] = CIDR.split('/');
+      const parts = CIDR.split('/');
+      const start = parts[0];
+      const prefix = parts[1];
       if (undefined !== start && undefined !== prefix &&
        prefix > 0 && prefix < 33 &&
        /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(start)
@@ -38,51 +42,58 @@ block net_content
         let net32 = 0 >>> 0;
         net32 = (net[0]<<24) + (net[1]<<16) + (net[2]<<8) + (net[3]);
         net32 &= ~host32;
-        bcast32 = net32 + host32;
-        const networkCIDR = document.getElementById('networkCIDR');
-        const poolStart = document.getElementById('poolStart');
-        const poolEnd = document.getElementById('poolEnd');
-        networkCIDR.value = int32toIPv4String(net32) + '/' + prefix;
-        poolStart.value = int32toIPv4String(net32 + 1);  
-        poolEnd.value = int32toIPv4String(bcast32 - 1);
-      } else {
-        poolStart.value = 'Invalid network CIDR';
-        poolEnd.value = 'Invalid network CIDR';
+        const bcast32 = net32 + host32;
+        document.getElementById('networkCIDR').value = int32toIPv4String(net32) + '/' + prefix;
+        document.getElementById('poolStart').value = int32toIPv4String(net32 + 1);  
+        document.getElementById('poolEnd').value = int32toIPv4String(bcast32 - 1);
       }
     }
 
-  if message
-    .alert.alert-info
-      strong= message
+  .modern-card
+    .modern-card-header
+      div
+        h3= t('easy_setup.title')
+        p.modern-card-subtitle= t('easy_setup.subtitle')
+      div
+        a.btn.btn-default(href=('/controller/network/' + network.nwid))= t('common.cancel')
 
-  form(method='POST' action='')
-    .form-group
-      button.btn.btn-link.float-right(type='button' data-toggle='collapse' data-target='#help') Help
-      .collapse(id='help')
-        p Please note that this utility only supports IPv4 at this stage.
-        p Use the following button to automatically generate a random network address, otherwise fill in the network address CIDR manually and the IP assignment pool will be automatically calculated for you.  You can manually alter these calculated values.
-
-    .form-group
-      button.btn.btn-primary(id='genIPv4' type='button' onclick='randomIPv4()') Generate network address
-
-    .form-group
-      label(for='networkCIDR') Network address in CIDR notation
-      input#networkCIDR.form-control(type='text' name='networkCIDR' onchange='CIDRtoPool(this.value)' placeholder='e.g. 10.11.12.0/24' value=(undefined===network.routes[0]? '' : network.routes[0].target))
-
-    .form-group
-      label(for='poolStart') Start of IP assignment pool
-      input#poolStart.form-control(type='text' name='poolStart' placeholder='e.g. 10.11.12.1' value=(undefined===network.ipAssignmentPools[0]? '' : network.ipAssignmentPools[0].ipRangeStart))
-
-    .form-group
-      label(for='poolEnd') End of IP assignment pool
-      input#poolEnd.form-control(type='text' name='poolEnd' placeholder='e.g. 10.11.12.254' value=(undefined===network.ipAssignmentPools[0]? '' : network.ipAssignmentPools[0].ipRangeEnd))
-
-    .form-group(style='padding-top: 10px')
-      button.btn.btn-primary(type='submit') Submit
-      = ' '
-      a.btn.btn-default(href=('/controller/network/' + network.nwid) name='cancel' role='button') Cancel
+    if message
+      .alert.alert-success(style='border-radius: 8px;')
+        strong ✅ #{message}
 
     if errors
-      ul
-        for err in errors
-          li!= err.msg
+      .alert.alert-warning(style='border-radius: 8px;')
+        ul(style='margin: 0; padding-left: 20px;')
+          for err in errors
+            li!= err.msg
+
+    div(style='background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px;')
+      label(style='font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 8px;')= t('easy_setup.preset_subnet')
+      div(style='display: flex; gap: 8px; flex-wrap: wrap;')
+        button.btn.btn-default.btn-sm(type='button' onclick="setSubnet('10.147.17.0/24')") 10.147.17.0/24 (推荐)
+        button.btn.btn-default.btn-sm(type='button' onclick="setSubnet('192.168.192.0/24')") 192.168.192.0/24
+        button.btn.btn-default.btn-sm(type='button' onclick="setSubnet('172.28.28.0/24')") 172.28.28.0/24
+        button.btn.btn-primary.btn-sm(type='button' onclick='randomIPv4()')
+          span.glyphicon.glyphicon-random(style='margin-right: 4px;')
+          | 🎲 随机生成私网网段
+
+    form(method='POST' action='')
+      .form-group
+        label(for='networkCIDR') 1. 目标虚拟局域网网段 (CIDR)
+        input#networkCIDR.form-control(type='text' name='networkCIDR' onchange='CIDRtoPool(this.value)' placeholder='e.g. 10.147.17.0/24' value=(undefined===network.routes[0]? '' : network.routes[0].target) required)
+
+      .row
+        .col-sm-6
+          .form-group
+            label(for='poolStart') 2. IP 自动分配池起始地址 (Start IP)
+            input#poolStart.form-control(type='text' name='poolStart' placeholder='e.g. 10.147.17.1' value=(undefined===network.ipAssignmentPools[0]? '' : network.ipAssignmentPools[0].ipRangeStart) required)
+        .col-sm-6
+          .form-group
+            label(for='poolEnd') 3. IP 自动分配池结束地址 (End IP)
+            input#poolEnd.form-control(type='text' name='poolEnd' placeholder='e.g. 10.147.17.254' value=(undefined===network.ipAssignmentPools[0]? '' : network.ipAssignmentPools[0].ipRangeEnd) required)
+
+      div(style='margin-top: 24px; display: flex; gap: 12px;')
+        button.btn.btn-primary(type='submit')
+          span.glyphicon.glyphicon-ok(style='margin-right: 6px;')
+          | #{t('easy_setup.apply_btn')}
+        a.btn.btn-default(href=('/controller/network/' + network.nwid))= t('common.cancel')

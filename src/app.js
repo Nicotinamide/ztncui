@@ -21,6 +21,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const users = require('./routes/users');
 const zt_controller = require('./routes/zt_controller');
+const { i18nMiddleware } = require('./middleware/i18n');
 
 const app = express();
 
@@ -79,6 +80,7 @@ app.use(session({
 }));
 app.use(expressValidator());
 app.use(cookieParser());
+app.use(i18nMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/fonts', express.static(path.join(__dirname, 'node_modules/bootstrap/fonts')));
 app.use('/bscss', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
@@ -108,6 +110,15 @@ app.use((req, res, next) => {
     }
   }
   next();
+});
+
+// Switch language route
+app.get('/set-lang/:lang', (req, res) => {
+  const lang = (req.params.lang === 'zh' || req.params.lang === 'zh-CN') ? 'zh-CN' : 'en-US';
+  if (req.session) req.session.lang = lang;
+  res.cookie('ztncui_lang', lang, { maxAge: 365 * 24 * 3600 * 1000, httpOnly: false });
+  const redirect = req.query.redirect || req.headers.referer || '/';
+  res.redirect(redirect);
 });
 
 app.use('/', index);

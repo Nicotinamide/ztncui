@@ -95,7 +95,7 @@ exports.network_list = async function(req, res) {
     }
 
   try {
-    networks = await zt.network_list();
+    const networks = await zt.network_list();
     res.render('networks', {title: 'Networks on this controller', navigate: navigate, networks: networks});
   } catch (err) {
     res.render('networks', {title: 'Networks on this controller', navigate: navigate, error: 'Error retrieving list of networks on this controller: ' + err});
@@ -142,8 +142,6 @@ exports.network_create_post = async function(req, res) {
     }
 
   req.checkBody('name', 'Network name required').notEmpty();
-
-  req.sanitize('name').escape();
   req.sanitize('name').trim();
 
   const errors = req.validationErrors();
@@ -230,7 +228,6 @@ exports.name = async function(req, res) {
     }
 
   req.checkBody('name', 'Network name required').notEmpty();
-  req.sanitize('name').escape();
   req.sanitize('name').trim();
 
   const errors = req.validationErrors();
@@ -263,8 +260,8 @@ exports.ipAssignmentPools = async function(req, res) {
   req.sanitize('ipRangeStart').trim();
   req.checkBody('ipRangeEnd', 'IP range end required').notEmpty();
   req.checkBody('ipRangeEnd', 'IP range end needs a valid IPv4 or IPv6 address').isIP();
-  req.sanitize('ipRangEnd').escape();
-  req.sanitize('ipRangEnd').trim();
+  req.sanitize('ipRangeEnd').escape();
+  req.sanitize('ipRangeEnd').trim();
 
   const errors = req.validationErrors();
 
@@ -293,7 +290,7 @@ exports.ipAssignmentPools = async function(req, res) {
   }
 }
 
-isValidPrefix = function(str, max) {
+const isValidPrefix = function(str, max) {
   const num = Math.floor(Number(str));
   return String(num) == str && num >= 0 && num <= max;
 }
@@ -417,13 +414,13 @@ exports.private = async function (req, res) {
       whence: ''
     }
 
-  const private =
+  const privateConfig =
     {
       private: req.body.private
     };
 
   try {
-    const network = await zt.network_object(req.params.nwid, private);
+    const network = await zt.network_object(req.params.nwid, privateConfig);
     navigate.whence = '/controller/network/' + network.nwid;
     res.render('private', {title: 'private', navigate: navigate, network: network});
   } catch (err) {
