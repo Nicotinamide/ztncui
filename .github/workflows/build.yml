@@ -34,8 +34,9 @@ jobs:
 
       - name: Package Standalone Linux Binary via pkg
         run: |
+          npm install -g pkg
           cd src
-          npx @vercel/pkg -c ./package.json -t node16-linux-x64 bin/www -o ../ztncui
+          pkg -c ./package.json -t node16-linux-x64 bin/www -o ../ztncui
           chmod +x ../ztncui
 
       - name: Package Tarball with Addons
