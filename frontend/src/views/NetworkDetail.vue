@@ -1,7 +1,31 @@
 <template>
-  <div v-if="network">
-    <!-- Top Header Card -->
-    <div class="card" style="margin-bottom: 20px;">
+  <div>
+    <!-- Error State -->
+    <div v-if="error" class="card text-center" style="padding: 48px 20px;">
+      <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">加载网络失败</h2>
+      <p style="color: var(--danger); margin-bottom: 24px; font-size: 14px;">{{ error }}</p>
+      <div style="display: flex; justify-content: center; gap: 12px;">
+        <button class="btn btn-primary" @click="loadData">
+          <span>🔄 重新加载</span>
+        </button>
+        <router-link to="/networks" class="btn btn-secondary">
+          <span>← 返回网络列表</span>
+        </router-link>
+      </div>
+    </div>
+
+    <!-- Initial Network Loading Skeleton -->
+    <div v-else-if="loading" class="card text-center" style="padding: 64px 20px;">
+      <div class="loading-spinner"></div>
+      <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 16px;">正在加载网络配置...</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">网络 ID: <code>{{ nwid }}</code></p>
+    </div>
+
+    <!-- Main Network View -->
+    <div v-else-if="network">
+      <!-- Top Header Card -->
+      <div class="card" style="margin-bottom: 20px;">
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
         <div>
           <!-- Network Name Editable -->
@@ -83,132 +107,155 @@
           <h2 class="card-title">{{ t('detail.tab_members') }} ({{ members.length }})</h2>
           <p class="card-subtitle">管理已加入此虚拟网络的设备节点与授权权限</p>
         </div>
-        <div style="max-width: 280px; width: 100%;">
-          <input
-            v-model="memberSearch"
-            type="text"
-            class="form-control"
-            :placeholder="t('detail.search_members')"
-          />
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn btn-secondary btn-sm" @click="loadMembers" :disabled="membersLoading" title="刷新成员列表">
+            <span>🔄</span>
+            <span v-if="!membersLoading">刷新</span>
+          </button>
+          <div style="max-width: 280px; width: 100%;">
+            <input
+              v-model="memberSearch"
+              type="text"
+              class="form-control"
+              :placeholder="t('detail.search_members')"
+            />
+          </div>
         </div>
       </div>
 
-      <div v-if="filteredMembers.length > 0" class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 4%;"></th>
-              <th style="width: 18%;">{{ t('detail.col_name') }}</th>
-              <th style="width: 14%;">{{ t('detail.col_node') }}</th>
-              <th style="width: 8%; text-align: center;">{{ t('detail.col_auth') }}</th>
-              <th style="width: 8%; text-align: center;">{{ t('detail.col_bridge') }}</th>
-              <th style="width: 20%;">{{ t('detail.col_managed_ips') }}</th>
-              <th style="width: 14%;">{{ t('detail.col_status') }}</th>
-              <th style="width: 14%;">{{ t('detail.col_endpoint') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="m in filteredMembers" :key="m.id">
-              <td style="text-align: center;">
-                <button
-                  class="copy-btn"
-                  style="color: var(--danger);"
-                  @click="confirmDeleteMember(m)"
-                  title="删除该成员"
-                >
-                  🗑️
-                </button>
-              </td>
-              <td>
-                <input
-                  :value="m.name"
-                  type="text"
-                  class="form-control"
-                  style="height: 32px; font-size: 13px;"
-                  placeholder="添加设备备注..."
-                  @change="saveMemberName(m.id, $event.target.value)"
-                />
-              </td>
-              <td>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <span class="badge-id" style="font-size: 12px;">{{ m.id }}</span>
-                  <button class="copy-btn" @click="copyText(m.id, t('common.copied'))">📋</button>
-                </div>
-              </td>
-              <td style="text-align: center;">
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :checked="m.authorized"
-                    @change="toggleMemberAuth(m.id, $event.target.checked)"
-                  />
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td style="text-align: center;">
-                <label class="switch">
-                  <input
-                    type="checkbox"
-                    :checked="m.activeBridge"
-                    @change="toggleMemberBridge(m.id, $event.target.checked)"
-                  />
-                  <span class="slider"></span>
-                </label>
-              </td>
-              <td>
-                <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
-                  <span
-                    v-for="(ip, idx) in m.ipAssignments"
-                    :key="idx"
-                    class="badge badge-success"
-                    style="font-family: monospace; font-size: 12px;"
-                  >
-                    {{ ip }}
-                    <span
-                      style="cursor: pointer; margin-left: 4px; font-weight: bold;"
-                      @click="deleteMemberIp(m.id, idx)"
-                      title="移除此 IP"
-                    >×</span>
-                  </span>
+      <!-- Members Loading Spinner inside tab -->
+      <div v-if="membersLoading" style="text-align: center; padding: 48px 20px;">
+        <div class="loading-spinner"></div>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 14px;">正在加载已连接设备与成员列表...</p>
+      </div>
+
+      <!-- Members Table -->
+      <div v-else-if="paginatedMembers.length > 0">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 4%;"></th>
+                <th style="width: 18%;">{{ t('detail.col_name') }}</th>
+                <th style="width: 14%;">{{ t('detail.col_node') }}</th>
+                <th style="width: 8%; text-align: center;">{{ t('detail.col_auth') }}</th>
+                <th style="width: 8%; text-align: center;">{{ t('detail.col_bridge') }}</th>
+                <th style="width: 20%;">{{ t('detail.col_managed_ips') }}</th>
+                <th style="width: 14%;">{{ t('detail.col_status') }}</th>
+                <th style="width: 14%;">{{ t('detail.col_endpoint') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="m in paginatedMembers" :key="m.id">
+                <td style="text-align: center;">
                   <button
-                    class="btn btn-secondary btn-sm"
-                    style="padding: 2px 6px; font-size: 11px;"
-                    @click="openAddIpModal(m)"
+                    class="copy-btn"
+                    style="color: var(--danger);"
+                    @click="confirmDeleteMember(m)"
+                    title="删除该成员"
                   >
-                    + IP
+                    🗑️
                   </button>
-                </div>
-              </td>
-              <td>
-                <div v-if="m.id === ztAddress" style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 13px;">
-                  <span class="dot" style="background: var(--primary);"></span>
-                  <span>CONTROLLER</span>
-                </div>
-                <div v-else-if="m.peer && m.peer.latency !== -1" style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 13px;">
-                  <span class="dot dot-online"></span>
-                  <span>ONLINE (v{{ m.peer.version }})</span>
-                </div>
-                <div v-else style="color: var(--text-light); display: flex; align-items: center; gap: 6px; font-size: 13px;">
-                  <span class="dot dot-offline"></span>
-                  <span>OFFLINE</span>
-                </div>
-              </td>
-              <td>
-                <div v-if="m.peer && m.peer.paths && m.peer.paths.length > 0" style="font-size: 12px; font-family: monospace;">
-                  <template v-for="p in m.peer.paths">
-                    <div v-if="p.preferred" :key="p.address">
-                      {{ p.address }}
-                      <span v-if="m.peer.latency !== -1" class="badge badge-muted" style="margin-top: 2px;">
-                        ⚡ {{ m.peer.latency }} ms
-                      </span>
-                    </div>
-                  </template>
-                </div>
-                <div v-else style="color: var(--text-light); font-size: 12px;">-</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td>
+                  <input
+                    :value="m.name"
+                    type="text"
+                    class="form-control"
+                    style="height: 32px; font-size: 13px;"
+                    placeholder="添加设备备注..."
+                    @change="saveMemberName(m.id, $event.target.value)"
+                  />
+                </td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="badge-id" style="font-size: 12px;">{{ m.id }}</span>
+                    <button class="copy-btn" @click="copyText(m.id, t('common.copied'))">📋</button>
+                  </div>
+                </td>
+                <td style="text-align: center;">
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      :checked="m.authorized"
+                      @change="toggleMemberAuth(m.id, $event.target.checked)"
+                    />
+                    <span class="slider"></span>
+                  </label>
+                </td>
+                <td style="text-align: center;">
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      :checked="m.activeBridge"
+                      @change="toggleMemberBridge(m.id, $event.target.checked)"
+                    />
+                    <span class="slider"></span>
+                  </label>
+                </td>
+                <td>
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+                    <span
+                      v-for="(ip, idx) in m.ipAssignments"
+                      :key="idx"
+                      class="badge badge-success"
+                      style="font-family: monospace; font-size: 12px;"
+                    >
+                      {{ ip }}
+                      <span
+                        style="cursor: pointer; margin-left: 4px; font-weight: bold;"
+                        @click="deleteMemberIp(m.id, idx)"
+                        title="移除此 IP"
+                      >×</span>
+                    </span>
+                    <button
+                      class="btn btn-secondary btn-sm"
+                      style="padding: 2px 6px; font-size: 11px;"
+                      @click="openAddIpModal(m)"
+                    >
+                      + IP
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  <div v-if="m.id === ztAddress" style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                    <span class="dot" style="background: var(--primary);"></span>
+                    <span>CONTROLLER</span>
+                  </div>
+                  <div v-else-if="m.peer && m.peer.latency !== -1 && m.peer.latency !== undefined" style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                    <span class="dot dot-online"></span>
+                    <span>ONLINE (v{{ m.peer.version || '1.x' }})</span>
+                  </div>
+                  <div v-else style="color: var(--text-light); display: flex; align-items: center; gap: 6px; font-size: 13px;">
+                    <span class="dot dot-offline"></span>
+                    <span>OFFLINE</span>
+                  </div>
+                </td>
+                <td>
+                  <div v-if="getPreferredPath(m.peer)" style="font-size: 12px; font-family: monospace;">
+                    <div>{{ getPreferredPath(m.peer).address }}</div>
+                    <span v-if="m.peer.latency !== -1 && m.peer.latency !== undefined" class="badge badge-muted" style="margin-top: 2px;">
+                      ⚡ {{ m.peer.latency }} ms
+                    </span>
+                  </div>
+                  <div v-else style="color: var(--text-light); font-size: 12px;">-</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Bar -->
+        <div v-if="totalPages > 1" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 0 4px; font-size: 13px; color: var(--text-muted);">
+          <div>
+            共 {{ filteredMembers.length }} 个成员，当前显示第 {{ (currentPage - 1) * pageSize + 1 }} ~ {{ Math.min(currentPage * pageSize, filteredMembers.length) }} 个
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-secondary btn-sm" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
+            <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
+            <button class="btn btn-secondary btn-sm" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
+          </div>
+        </div>
       </div>
 
       <div v-else style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
@@ -352,7 +399,7 @@
           <label class="switch">
             <input
               type="checkbox"
-              :checked="network.v4AssignMode?.zt"
+              :checked="!!network.v4AssignMode?.zt"
               @change="updateAssignModes('v4', $event.target.checked)"
             />
             <span class="slider"></span>
@@ -368,7 +415,7 @@
             <label class="switch">
               <input
                 type="checkbox"
-                :checked="network.v6AssignMode?.['6plane']"
+                :checked="!!network.v6AssignMode?.['6plane']"
                 @change="updateAssignModes('6plane', $event.target.checked)"
               />
               <span class="slider"></span>
@@ -380,7 +427,7 @@
             <label class="switch">
               <input
                 type="checkbox"
-                :checked="network.v6AssignMode?.['rfc4193']"
+                :checked="!!network.v6AssignMode?.['rfc4193']"
                 @change="updateAssignModes('rfc4193', $event.target.checked)"
               />
               <span class="slider"></span>
@@ -392,7 +439,7 @@
             <label class="switch">
               <input
                 type="checkbox"
-                :checked="network.v6AssignMode?.zt"
+                :checked="!!network.v6AssignMode?.zt"
                 @change="updateAssignModes('v6zt', $event.target.checked)"
               />
               <span class="slider"></span>
@@ -479,11 +526,12 @@
         <button type="button" class="btn btn-primary" @click="submitAddPool">{{ t('common.confirm') }}</button>
       </div>
     </Modal>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { t } from '../i18n';
 import { api } from '../api';
@@ -493,11 +541,19 @@ import Modal from '../components/Modal.vue';
 const route = useRoute();
 const nwid = route.params.nwid;
 
+const loading = ref(true);
+const membersLoading = ref(true);
+const error = ref(null);
+
 const network = ref(null);
 const members = ref([]);
 const ztAddress = ref('');
 const currentTab = ref('members');
 const memberSearch = ref('');
+
+// Pagination
+const currentPage = ref(1);
+const pageSize = 20;
 
 // Name Editing
 const editingName = ref(false);
@@ -550,23 +606,59 @@ const filteredMembers = computed(() => {
   );
 });
 
+const totalPages = computed(() => {
+  return Math.ceil(filteredMembers.value.length / pageSize) || 1;
+});
+
+const paginatedMembers = computed(() => {
+  const start = (currentPage.value - 1) * pageSize;
+  return filteredMembers.value.slice(start, start + pageSize);
+});
+
+watch(memberSearch, () => {
+  currentPage.value = 1;
+});
+
+function getPreferredPath(peer) {
+  if (!peer || !peer.paths || !Array.isArray(peer.paths) || peer.paths.length === 0) return null;
+  return peer.paths.find(p => p && p.preferred) || peer.paths[0] || null;
+}
+
+// 1. Load Network Details first (Fast, <30ms)
 async function loadData() {
+  loading.value = true;
+  error.value = null;
   try {
-    const [netRes, memRes] = await Promise.all([
-      api.getNetwork(nwid),
-      api.getMembers(nwid).catch(() => ({ members: [] }))
-    ]);
+    const netRes = await api.getNetwork(nwid);
     network.value = netRes.network || {};
     nameInput.value = network.value.name || '';
-    members.value = memRes.members || [];
-    ztAddress.value = memRes.zt_address || '';
-
     if (network.value.dns) {
       dnsDomain.value = network.value.dns.domain || '';
       dnsServers.value = (network.value.dns.servers || []).join(', ');
     }
+    loading.value = false;
+
+    // Load members concurrently in the background
+    loadMembers();
   } catch (err) {
-    showToast(err.message, 'error');
+    console.error('Failed to load network:', err);
+    error.value = err.message || '获取网络详情失败';
+    loading.value = false;
+  }
+}
+
+// 2. Load Members concurrently in background
+async function loadMembers() {
+  membersLoading.value = true;
+  try {
+    const memRes = await api.getMembers(nwid);
+    members.value = memRes.members || [];
+    ztAddress.value = memRes.zt_address || '';
+  } catch (err) {
+    console.error('Failed to load members:', err);
+    showToast('成员设备列表加载失败: ' + err.message, 'warning');
+  } finally {
+    membersLoading.value = false;
   }
 }
 
@@ -648,7 +740,7 @@ async function submitAddIp() {
     await api.addMemberIp(nwid, selectedMember.value.id, newIpInput.value.trim());
     showToast('虚拟 IP 添加成功');
     showAddIpModal.value = false;
-    await loadData();
+    await loadMembers();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -658,7 +750,7 @@ async function deleteMemberIp(id, index) {
   try {
     await api.deleteMemberIp(nwid, id, index);
     showToast('虚拟 IP 已删除');
-    await loadData();
+    await loadMembers();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -675,6 +767,16 @@ async function confirmDeleteMember(member) {
   }
 }
 
+// Fast reload for network config only
+async function refreshNetworkOnly() {
+  try {
+    const netRes = await api.getNetwork(nwid);
+    network.value = netRes.network || {};
+  } catch (err) {
+    console.error('Failed to refresh network config:', err);
+  }
+}
+
 // Easy Setup
 async function applyEasySetup() {
   applyingEasy.value = true;
@@ -684,7 +786,7 @@ async function applyEasySetup() {
     const pools = [{ ipRangeStart: p.start, ipRangeEnd: p.end }];
     await api.easySetup(nwid, routes, pools, { zt: true });
     showToast('快速向导配置已生效！');
-    await loadData();
+    await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
@@ -701,7 +803,7 @@ async function submitAddRoute() {
     showAddRouteModal.value = false;
     newRouteTarget.value = '';
     newRouteVia.value = '';
-    await loadData();
+    await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -712,7 +814,7 @@ async function deleteRoute(target) {
   try {
     await api.deleteRoute(nwid, target);
     showToast('路由已删除');
-    await loadData();
+    await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -727,7 +829,7 @@ async function submitAddPool() {
     showAddPoolModal.value = false;
     newPoolStart.value = '';
     newPoolEnd.value = '';
-    await loadData();
+    await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -738,7 +840,7 @@ async function deletePool(start, end) {
   try {
     await api.deletePool(nwid, start, end);
     showToast('分配池已删除');
-    await loadData();
+    await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -770,7 +872,7 @@ async function saveDns() {
     const s = dnsServers.value.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
     await api.updateDns(nwid, dnsDomain.value.trim(), s);
     showToast('DNS 配置已保存');
-    await loadData();
+    await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -780,3 +882,21 @@ onMounted(() => {
   loadData();
 });
 </script>
+
+<style scoped>
+.loading-spinner {
+  margin: 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

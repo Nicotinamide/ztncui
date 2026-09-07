@@ -9,6 +9,7 @@ async function request(endpoint, options = {}) {
   };
 
   const config = {
+    credentials: 'include',
     ...options,
     headers: {
       ...defaultHeaders,
@@ -24,6 +25,10 @@ async function request(endpoint, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 401 && !window.location.pathname.startsWith('/login')) {
+      window.location.href = '/login';
+      return;
+    }
     const error = new Error(data.error || `HTTP error ${response.status}`);
     error.status = response.status;
     error.data = data;

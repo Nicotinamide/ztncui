@@ -224,6 +224,14 @@ router.post('/networks', requireAuth, async (req, res) => {
 router.get('/networks/:nwid', requireAuth, async (req, res) => {
   try {
     const network = await zt.network_detail(req.params.nwid);
+    if (!network || (!network.nwid && !network.id)) {
+      return res.status(404).json({ success: false, error: `网络 ${req.params.nwid} 未找到或已被删除` });
+    }
+    network.nwid = network.nwid || network.id || req.params.nwid;
+    network.routes = Array.isArray(network.routes) ? network.routes : [];
+    network.ipAssignmentPools = Array.isArray(network.ipAssignmentPools) ? network.ipAssignmentPools : [];
+    network.v4AssignMode = network.v4AssignMode || { zt: false };
+    network.v6AssignMode = network.v6AssignMode || {};
     res.json({ success: true, network });
   } catch (err) {
     console.error(`API GET /networks/${req.params.nwid} error:`, err);
@@ -371,13 +379,50 @@ router.post('/networks/:nwid/assign-mode', requireAuth, async (req, res) => {
 // 5. Network Members Management
 // ==========================================
 
+function withTimeout(promise, ms, fallback) {
+  return Promise.race([
+    promise,
+    new Promise(resolve => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
+async function pMap(items, mapper, concurrency = 10) {
+  const results = new Array(items.length);
+  let index = 0;
+  async function worker() {
+    while (index < items.length) {
+      const i = index++;
+      results[i] = await mapper(items[i], i);
+    }
+  }
+  const workers = [];
+  for (let i = 0; i < Math.min(concurrency, items.length); i++) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+  return results;
+}
+
+const membersCache = new Map();
+const MEMBERS_CACHE_TTL = 3000; // 3 seconds
+
+function invalidateMembersCache(nwid) {
+  if (nwid) membersCache.delete(nwid);
+}
+
 router.get('/networks/:nwid/members', requireAuth, async (req, res) => {
   const nwid = req.params.nwid;
+  const now = Date.now();
+  const cached = membersCache.get(nwid);
+  if (cached && now - cached.timestamp < MEMBERS_CACHE_TTL) {
+    return res.json({ success: true, members: cached.members, zt_address: cached.zt_address, cached: true });
+  }
+
   try {
     const [rawMembers, peersRaw, zt_address] = await Promise.all([
-      zt.members(nwid).catch(() => ({})),
-      zt.peers().catch(() => []),
-      zt.get_zt_address().catch(() => '')
+      withTimeout(zt.members(nwid).catch(() => ({})), 3000, {}),
+      withTimeout(zt.peers().catch(() => []), 3000, []),
+      withTimeout(zt.get_zt_address().catch(() => ''), 2000, '')
     ]);
 
     const peers = Array.isArray(peersRaw) ? peersRaw : [];
@@ -398,23 +443,29 @@ router.get('/networks/:nwid/members', requireAuth, async (req, res) => {
 
     const ids = (typeof member_ids === 'object' && member_ids !== null) ? Object.keys(member_ids) : [];
 
-    const memberPromises = ids.map(async id => {
+    // Load member details in controlled batches of 10 to avoid stalling ZeroTier daemon
+    const memberResults = await pMap(ids, async id => {
       try {
         const [member, name] = await Promise.all([
-          zt.member_detail(nwid, id).catch(() => null),
-          storage.getItem(id).catch(() => '')
+          withTimeout(zt.member_detail(nwid, id).catch(() => null), 2000, null),
+          withTimeout(storage.getItem(id).catch(() => ''), 500, '')
         ]);
         if (!member) return null;
+        member.id = id;
+        member.address = member.address || id;
         member.name = name || '';
         member.peer = peers.find(x => x && x.address === member.address) || null;
+        member.ipAssignments = Array.isArray(member.ipAssignments) ? member.ipAssignments : [];
+        member.authorized = !!member.authorized;
+        member.activeBridge = !!member.activeBridge;
         return member;
       } catch {
         return null;
       }
-    });
+    }, 12);
 
-    const memberResults = await Promise.all(memberPromises);
     const members = memberResults.filter(Boolean);
+    membersCache.set(nwid, { members, zt_address, timestamp: now });
 
     res.json({ success: true, members, zt_address });
   } catch (err) {
@@ -425,6 +476,7 @@ router.get('/networks/:nwid/members', requireAuth, async (req, res) => {
 
 router.put('/networks/:nwid/members/:id/auth', requireAuth, async (req, res) => {
   const { authorized } = req.body;
+  invalidateMembersCache(req.params.nwid);
   try {
     const result = await zt.member_object(req.params.nwid, req.params.id, { authorized: !!authorized });
     res.json({ success: true, member: result });
@@ -436,6 +488,7 @@ router.put('/networks/:nwid/members/:id/auth', requireAuth, async (req, res) => 
 
 router.put('/networks/:nwid/members/:id/bridge', requireAuth, async (req, res) => {
   const { activeBridge } = req.body;
+  invalidateMembersCache(req.params.nwid);
   try {
     const result = await zt.member_object(req.params.nwid, req.params.id, { activeBridge: !!activeBridge });
     res.json({ success: true, member: result });
@@ -447,6 +500,7 @@ router.put('/networks/:nwid/members/:id/bridge', requireAuth, async (req, res) =
 
 router.put('/networks/:nwid/members/:id/name', requireAuth, async (req, res) => {
   const name = (req.body.name || '').trim();
+  invalidateMembersCache(req.params.nwid);
   try {
     await storage.setItem(req.params.id, name);
     res.json({ success: true, id: req.params.id, name });
@@ -459,6 +513,7 @@ router.put('/networks/:nwid/members/:id/name', requireAuth, async (req, res) => 
 router.post('/networks/:nwid/members/:id/ips', requireAuth, async (req, res) => {
   const ipAddress = (req.body.ipAddress || '').trim();
   if (!ipAddress) return res.status(400).json({ success: false, error: 'ipAddress required' });
+  invalidateMembersCache(req.params.nwid);
   try {
     const result = await zt.ipAssignmentAdd(req.params.nwid, req.params.id, { ipAddress });
     res.json({ success: true, result });
@@ -471,6 +526,7 @@ router.post('/networks/:nwid/members/:id/ips', requireAuth, async (req, res) => 
 router.delete('/networks/:nwid/members/:id/ips/:index', requireAuth, async (req, res) => {
   const index = parseInt(req.params.index, 10);
   if (isNaN(index)) return res.status(400).json({ success: false, error: 'Valid index required' });
+  invalidateMembersCache(req.params.nwid);
   try {
     const result = await zt.ipAssignmentDelete(req.params.nwid, req.params.id, index);
     res.json({ success: true, result });
@@ -481,6 +537,7 @@ router.delete('/networks/:nwid/members/:id/ips/:index', requireAuth, async (req,
 });
 
 router.delete('/networks/:nwid/members/:id', requireAuth, async (req, res) => {
+  invalidateMembersCache(req.params.nwid);
   try {
     const result = await zt.member_delete(req.params.nwid, req.params.id);
     res.json({ success: true, result });

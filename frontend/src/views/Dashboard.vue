@@ -29,15 +29,18 @@
       <!-- Online Status Card -->
       <div class="card" style="margin-bottom: 0; padding: 20px;">
         <span class="card-subtitle">{{ t('dashboard.status') }}</span>
-        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-          <span v-if="status.online" class="badge badge-success" style="font-size: 14px; padding: 6px 12px;">
-            <span class="dot dot-online"></span>
-            <span>ONLINE (在线)</span>
-          </span>
-          <span v-else class="badge badge-muted" style="font-size: 14px; padding: 6px 12px;">
-            <span class="dot dot-offline"></span>
-            <span>CONNECTING...</span>
-          </span>
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="badge badge-success" style="font-size: 13px; padding: 4px 10px;">
+              <span class="dot dot-online"></span>
+              <span>控制器就绪 (RUNNING)</span>
+            </span>
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+            <span>Planet 根网络:</span>
+            <span v-if="status.online" style="color: var(--success); font-weight: 600;">已联通 (ONLINE)</span>
+            <span v-else style="color: var(--warning); font-weight: 600;" title="官方根服务器同步中，本地控制器私网管理不受影响">同步中 (CONNECTING...)</span>
+          </div>
         </div>
       </div>
 
