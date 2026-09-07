@@ -1,4 +1,4 @@
-name: Build Linux Binary
+name: Build Linux Binary & Docker Image
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   build-linux:
@@ -69,23 +70,67 @@ jobs:
         if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: latest
-          name: "ztncui-linux-x64 (Security Patched)"
+          name: "ztncui-linux-x64 (Modern Vue 3 SPA)"
           body: |
-            ### ztncui Patched Standalone Binary (Linux x86_64)
+            ### ztncui Modern Vue 3 SPA + ZeroTier Controller
+            - Modern Single Page Application (Vite 5 + Vue 3)
+            - 100% Pug-free clean architecture
+            - High concurrency background member pagination & batching
+            - Complete i18n localization (zh-CN & en-US)
+            - Hardened security (Origin check, rate limiting, secure session secrets)
 
-            This binary contains all security and compatibility patches:
-            - Fix Open Redirect vulnerability on `/login`
-            - Add IP-based brute force rate limiting
-            - Dynamic persistent 32-byte session secret & hardened cookie flags
-            - Native `fetch` + universal HTTP fallback (deprecated `got` removed)
-            - Support for ZeroTier 1.14+ / 1.16+ member status formatting
-
-            #### Usage in Docker:
+            #### Option 1: Docker Image (GHCR)
             ```bash
-            # Copy to container and restart
-            docker cp ztncui ztncui:/opt/key-networks/ztncui/ztncui
+            docker pull ghcr.io/nicotinamide/ztncui:latest
+            # Or via China acceleration mirror:
+            docker pull gh.lale.live/ghcr.io/nicotinamide/ztncui:latest
+            ```
+
+            #### Option 2: Binary Hot-swap
+            ```bash
+            curl -L https://gh.lale.live/https://github.com/Nicotinamide/ztncui/releases/download/latest/ztncui -o /root/ztncui
+            chmod +x /root/ztncui
+            docker cp /root/ztncui ztncui:/opt/key-networks/ztncui/ztncui
             docker restart ztncui
             ```
           files: |
             ztncui
             ztncui-linux-x64.tar.gz
+
+  build-docker:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -9,7 +9,6 @@
   "dependencies": {
     "argon2": "^0.19.3",
     "body-parser": "^1.18.3",
-    "bootstrap": "^3.4.1",
     "cookie-parser": "~1.4.3",
     "debug": "~3.1.0",
     "dotenv": "^4.0.0",
@@ -18,10 +17,8 @@
     "express-validator": "^4.3.0",
     "helmet": "^3.23.0",
     "ip-address": "^5.8.9",
-    "jquery": "^3.6.1",
     "morgan": "~1.9.1",
     "node-persist": "^2.1.0",
-    "pug": "^3.0.2",
     "serve-favicon": "~2.5.0"
   },
   "devDependencies": {
@@ -29,12 +26,9 @@
   },
   "pkg": {
     "assets": [
-      "views/*",
       "public/**/*",
-      "locales/**/*",
       "etc/**/*",
-      "dist/**/*",
-      "node_modules/jquery/dist/jquery.min.js"
+      "dist/**/*"
     ]
   }
 }

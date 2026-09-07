@@ -16,12 +16,8 @@ const expressValidator = require('express-validator');
 const session = require('express-session');
 const helmet = require('helmet');
 
-const index = require('./routes/index');
 const fs = require('fs');
 const crypto = require('crypto');
-const users = require('./routes/users');
-const zt_controller = require('./routes/zt_controller');
-const { i18nMiddleware } = require('./middleware/i18n');
 
 const app = express();
 
@@ -59,11 +55,9 @@ function getSessionSecret() {
 
 const session_secret = getSessionSecret();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
-
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
@@ -80,12 +74,7 @@ app.use(session({
 }));
 app.use(expressValidator());
 app.use(cookieParser());
-app.use(i18nMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/fonts', express.static(path.join(__dirname, 'node_modules/bootstrap/fonts')));
-app.use('/bscss', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/css')));
-app.use('/jqjs', express.static(path.join(__dirname, 'node_modules/jquery/dist')));
-app.use('/bsjs', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js')));
 
 // CSRF Defense: Origin & Referer verification for state-changing requests
 app.use((req, res, next) => {
@@ -116,7 +105,7 @@ app.use((req, res, next) => {
 const api = require('./routes/api');
 app.use('/api/v1', api);
 
-// Serve modern SPA if dist directory exists
+// Serve modern SPA
 const distDir = path.join(__dirname, 'dist');
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
@@ -125,41 +114,22 @@ if (fs.existsSync(distDir)) {
     res.sendFile(path.join(distDir, 'index.html'));
   });
 } else {
-  // Switch language route for legacy UI
-  app.get('/set-lang/:lang', (req, res) => {
-    const lang = (req.params.lang === 'zh' || req.params.lang === 'zh-CN') ? 'zh-CN' : 'en-US';
-    if (req.session) req.session.lang = lang;
-    res.cookie('ztncui_lang', lang, { maxAge: 365 * 24 * 3600 * 1000, httpOnly: false });
-    const redirect = req.query.redirect || req.headers.referer || '/';
-    res.redirect(redirect);
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.status(503).send('Frontend SPA dist files not built. Please run `npm run build` in frontend directory.');
   });
-
-  app.use('/', index);
-  app.use('/users', users);
-  app.use('/controller', zt_controller);
 }
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = req.session.error;
-  var msg = req.session.success;
-  delete req.session.error;
-  delete req.session.success;
-  res.locals.message = '';
-  if (err) res.locals.message = '<p class="msg error">' + err + '</p>';
-  if (msg) res.locals.message = '<p class="msg success">' + msg + '</p>';
-next();
-});
-
-// error handler
+// Error handler
 app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+  const status = err.status || 500;
+  res.status(status);
+  if (req.path.startsWith('/api/')) {
+    return res.json({ error: err.message || 'Internal Server Error' });
+  }
+  res.type('html').send(`<!DOCTYPE html><html><head><title>Error</title></head><body style="font-family:sans-serif;padding:40px;text-align:center;"><h2>Error ${status}</h2><p>${err.message || 'An error occurred'}</p></body></html>`);
 });
 
 module.exports = app;
