@@ -98,6 +98,7 @@ exports.network_list = async function(req, res) {
     const networks = await zt.network_list();
     res.render('networks', {title: 'Networks on this controller', navigate: navigate, networks: networks});
   } catch (err) {
+    console.error('Error retrieving list of networks on this controller:', err);
     res.render('networks', {title: 'Networks on this controller', navigate: navigate, error: 'Error retrieving list of networks on this controller: ' + err});
   }
 };
@@ -120,6 +121,7 @@ exports.network_detail = async function(req, res) {
     ]);
     res.render('network_detail', {title: 'Network ' + network.name, navigate: navigate, network: network, members: members, zt_address: zt_address});
   } catch (err) {
+    console.error(`Error resolving detail for network ${req.params.nwid}:`, err);
     res.render('network_detail', {title: 'Detail for network', navigate: navigate, error: 'Error resolving detail for network ' + req.params.nwid + ': ' + err});
   }
 };

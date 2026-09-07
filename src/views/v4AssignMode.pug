@@ -6,19 +6,25 @@
 extends network_layout
 
 block net_content
-  script.
-    $(function() {
-      $('.checkbox').on('click', function() {
-        $.post('', {'zt': $('#v4AssignModeCheckBox').is(':checked')});
+  .modern-card
+    .modern-card-header
+      h3= t('network_detail.tab_assign_mode') + ' (IPv4)'
+      p.modern-card-subtitle IPv4 Address Assignment Mode
+    script.
+      $(function() {
+        $('#v4AssignModeCheckBox').on('change', function() {
+          $.post('', {'zt': $(this).is(':checked')})
+            .done(function() {
+              if (window.showToast) window.showToast('IPv4 assign mode updated');
+            });
+        });
       });
-    });
 
-  form(method='POST' action='')
-    table.table.table-responsive.table-striped.table-hover
-      tr
-        td(width='3%')
-          input#v4AssignModeCheckBox.checkbox(type='checkbox' checked=(network.v4AssignMode.zt? true : false))
-        td Auto-assign from IP Assignment Pool
+    div(style='display: flex; align-items: center; gap: 12px; padding: 16px 0;')
+      label.switch-box
+        input#v4AssignModeCheckBox(type='checkbox' checked=(network.v4AssignMode && network.v4AssignMode.zt ? true : false))
+        span.slider
+      span(style='font-weight: 500; font-size: 15px;') Auto-assign from IP Assignment Pool
 
   if errors
     ul
