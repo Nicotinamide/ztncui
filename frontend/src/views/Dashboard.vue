@@ -3,12 +3,12 @@
     <div class="card-header" style="margin-bottom: 24px;">
       <div>
         <h1 style="font-size: 24px; font-weight: 800;">{{ t('dashboard.title') }}</h1>
-        <p class="card-subtitle">ZeroTier One 本地控制器服务概览与运行指标</p>
+        <p class="card-subtitle">{{ t('dashboard.subtitle') }}</p>
       </div>
       <div>
         <button class="btn btn-secondary" @click="fetchData" :disabled="loading">
           <span>🔄</span>
-          <span>刷新数据</span>
+          <span>{{ t('common.refresh') }}</span>
         </button>
       </div>
     </div>
@@ -19,7 +19,7 @@
       <div class="card" style="margin-bottom: 0; padding: 20px;">
         <span class="card-subtitle">{{ t('dashboard.node_id') }}</span>
         <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-          <span class="badge-id" style="font-size: 16px;">{{ status.address || '加载中...' }}</span>
+          <span class="badge-id" style="font-size: 16px;">{{ status.address || t('common.loading') }}</span>
           <button v-if="status.address" class="copy-btn" @click="copyText(status.address, t('common.copied'))" :title="t('common.copy')">
             📋
           </button>
@@ -33,13 +33,13 @@
           <div style="display: flex; align-items: center; gap: 8px;">
             <span class="badge badge-success" style="font-size: 13px; padding: 4px 10px;">
               <span class="dot dot-online"></span>
-              <span>控制器就绪 (RUNNING)</span>
+              <span>{{ t('dashboard.controller_ready') }}</span>
             </span>
           </div>
           <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
-            <span>Planet 根网络:</span>
-            <span v-if="status.online" style="color: var(--success); font-weight: 600;">已联通 (ONLINE)</span>
-            <span v-else style="color: var(--warning); font-weight: 600;" title="官方根服务器同步中，本地控制器私网管理不受影响">同步中 (CONNECTING...)</span>
+            <span>{{ t('dashboard.planet_link') }}</span>
+            <span v-if="status.online" style="color: var(--success); font-weight: 600;">{{ t('dashboard.planet_online') }}</span>
+            <span v-else style="color: var(--warning); font-weight: 600;" :title="t('dashboard.planet_tip')">{{ t('dashboard.planet_syncing') }}</span>
           </div>
         </div>
       </div>
@@ -56,7 +56,7 @@
       <div class="card" style="margin-bottom: 0; padding: 20px;">
         <span class="card-subtitle">{{ t('dashboard.networks_count') }}</span>
         <div style="font-size: 20px; font-weight: 700; margin-top: 8px;">
-          {{ networks.length }} <span style="font-size: 13px; font-weight: 500; color: var(--text-muted);">个网络</span>
+          {{ networks.length }} <span style="font-size: 13px; font-weight: 500; color: var(--text-muted);">{{ t('dashboard.networks_unit') }}</span>
         </div>
       </div>
     </div>
@@ -66,10 +66,10 @@
       <div class="card-header">
         <div>
           <h2 class="card-title">{{ t('networks.title') }}</h2>
-          <p class="card-subtitle">本控制器管理的虚拟局域网</p>
+          <p class="card-subtitle">{{ t('dashboard.recent_networks_subtitle') }}</p>
         </div>
         <router-link to="/networks" class="btn btn-primary btn-sm">
-          <span>查看全部网络 ({{ networks.length }}) →</span>
+          <span>{{ t('dashboard.view_all_networks') }} ({{ networks.length }}) →</span>
         </router-link>
       </div>
 
@@ -87,7 +87,7 @@
             <tr v-for="net in networks.slice(0, 5)" :key="net.nwid">
               <td>
                 <router-link :to="'/networks/' + net.nwid" style="font-weight: 600; color: var(--primary); text-decoration: none;">
-                  {{ net.name || 'Unnamed Network' }}
+                  {{ net.name || t('common.unnamed_network') }}
                 </router-link>
               </td>
               <td>
@@ -97,12 +97,12 @@
                 </div>
               </td>
               <td>
-                <span v-if="net.private" class="badge badge-muted">🔒 私有模式</span>
-                <span v-else class="badge badge-success">🌐 公开模式</span>
+                <span v-if="net.private" class="badge badge-muted">🔒 {{ t('networks.private_mode') }}</span>
+                <span v-else class="badge badge-success">🌐 {{ t('networks.public_mode') }}</span>
               </td>
               <td style="text-align: right;">
                 <router-link :to="'/networks/' + net.nwid" class="btn btn-secondary btn-sm">
-                  <span>⚙️ 管理配置</span>
+                  <span>⚙️ {{ t('networks.detail_btn') }}</span>
                 </router-link>
               </td>
             </tr>
@@ -110,7 +110,7 @@
         </table>
       </div>
       <div v-else style="text-align: center; padding: 32px 16px; color: var(--text-muted);">
-        暂无网络，点击“网络管理”立即创建。
+        {{ t('networks.empty_title') }}
       </div>
     </div>
   </div>

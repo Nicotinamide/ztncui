@@ -3,14 +3,14 @@
     <!-- Error State -->
     <div v-if="error" class="card text-center" style="padding: 48px 20px;">
       <div style="font-size: 48px; margin-bottom: 12px;">⚠️</div>
-      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">加载网络失败</h2>
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">{{ t('detail.load_fail') }}</h2>
       <p style="color: var(--danger); margin-bottom: 24px; font-size: 14px;">{{ error }}</p>
       <div style="display: flex; justify-content: center; gap: 12px;">
         <button class="btn btn-primary" @click="loadData">
-          <span>🔄 重新加载</span>
+          <span>🔄 {{ t('common.refresh') }}</span>
         </button>
         <router-link to="/networks" class="btn btn-secondary">
-          <span>← 返回网络列表</span>
+          <span>← {{ t('common.back') }}</span>
         </router-link>
       </div>
     </div>
@@ -18,8 +18,8 @@
     <!-- Initial Network Loading Skeleton -->
     <div v-else-if="loading" class="card text-center" style="padding: 64px 20px;">
       <div class="loading-spinner"></div>
-      <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 16px;">正在加载网络配置...</h3>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">网络 ID: <code>{{ nwid }}</code></p>
+      <h3 style="font-size: 17px; font-weight: 700; color: var(--text-main); margin-top: 16px;">{{ t('detail.loading_net') }}</h3>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">{{ t('networks.network_id') }}: <code>{{ nwid }}</code></p>
     </div>
 
     <!-- Main Network View -->
@@ -32,9 +32,9 @@
           <div style="display: flex; align-items: center; gap: 10px;">
             <template v-if="!editingName">
               <h1 style="font-size: 24px; font-weight: 800; color: var(--text-main); margin: 0;">
-                {{ network.name || 'Unnamed Network' }}
+                {{ network.name || t('common.unnamed_network') }}
               </h1>
-              <button class="copy-btn" @click="startEditName" title="编辑网络名称" style="font-size: 16px;">
+              <button class="copy-btn" @click="startEditName" :title="t('detail.edit_name')" style="font-size: 16px;">
                 ✏️
               </button>
             </template>
@@ -48,8 +48,8 @@
                 @keyup.enter="saveName"
                 autofocus
               />
-              <button class="btn btn-primary btn-sm" @click="saveName">保存</button>
-              <button class="btn btn-secondary btn-sm" @click="editingName = false">取消</button>
+              <button class="btn btn-primary btn-sm" @click="saveName">{{ t('common.save') }}</button>
+              <button class="btn btn-secondary btn-sm" @click="editingName = false">{{ t('common.cancel') }}</button>
             </template>
           </div>
 
@@ -67,11 +67,11 @@
               :class="['badge', network.private ? 'badge-muted' : 'badge-success']"
               style="cursor: pointer; font-size: 13px; padding: 4px 10px;"
               @click="togglePrivate"
-              title="点击切换公开/私有模式"
+              :title="t('detail.click_to_toggle')"
             >
               <span v-if="network.private">🔒 {{ t('networks.private_mode') }}</span>
               <span v-else>🌐 {{ t('networks.public_mode') }}</span>
-              <span style="font-size: 11px; opacity: 0.7; margin-left: 4px;">(点击切换)</span>
+              <span style="font-size: 11px; opacity: 0.7; margin-left: 4px;">({{ t('detail.click_to_toggle') }})</span>
             </button>
           </div>
         </div>
@@ -105,12 +105,12 @@
       <div class="card-header">
         <div>
           <h2 class="card-title">{{ t('detail.tab_members') }} ({{ members.length }})</h2>
-          <p class="card-subtitle">管理已加入此虚拟网络的设备节点与授权权限</p>
+          <p class="card-subtitle">{{ t('detail.members_subtitle') }}</p>
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
-          <button class="btn btn-secondary btn-sm" @click="loadMembers" :disabled="membersLoading" title="刷新成员列表">
+          <button class="btn btn-secondary btn-sm" @click="loadMembers" :disabled="membersLoading" :title="t('common.refresh')">
             <span>🔄</span>
-            <span v-if="!membersLoading">刷新</span>
+            <span v-if="!membersLoading">{{ t('common.refresh') }}</span>
           </button>
           <div style="max-width: 280px; width: 100%;">
             <input
@@ -126,7 +126,7 @@
       <!-- Members Loading Spinner inside tab -->
       <div v-if="membersLoading" style="text-align: center; padding: 48px 20px;">
         <div class="loading-spinner"></div>
-        <p style="color: var(--text-muted); font-size: 14px; margin-top: 14px;">正在加载已连接设备与成员列表...</p>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 14px;">{{ t('detail.members_loading') }}</p>
       </div>
 
       <!-- Members Table -->
@@ -152,7 +152,7 @@
                     class="copy-btn"
                     style="color: var(--danger);"
                     @click="confirmDeleteMember(m)"
-                    title="删除该成员"
+                    :title="t('common.delete')"
                   >
                     🗑️
                   </button>
@@ -163,7 +163,7 @@
                     type="text"
                     class="form-control"
                     style="height: 32px; font-size: 13px;"
-                    placeholder="添加设备备注..."
+                    :placeholder="t('detail.name_placeholder')"
                     @change="saveMemberName(m.id, $event.target.value)"
                   />
                 </td>
@@ -205,7 +205,7 @@
                       <span
                         style="cursor: pointer; margin-left: 4px; font-weight: bold;"
                         @click="deleteMemberIp(m.id, idx)"
-                        title="移除此 IP"
+                        :title="t('common.delete')"
                       >×</span>
                     </span>
                     <button
@@ -220,15 +220,15 @@
                 <td>
                   <div v-if="m.id === ztAddress" style="color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 13px;">
                     <span class="dot" style="background: var(--primary);"></span>
-                    <span>CONTROLLER</span>
+                    <span>{{ t('detail.status_controller') }}</span>
                   </div>
                   <div v-else-if="m.peer && m.peer.latency !== -1 && m.peer.latency !== undefined" style="color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 13px;">
                     <span class="dot dot-online"></span>
-                    <span>ONLINE (v{{ m.peer.version || '1.x' }})</span>
+                    <span>{{ t('detail.status_online') }} (v{{ m.peer.version || '1.x' }})</span>
                   </div>
                   <div v-else style="color: var(--text-light); display: flex; align-items: center; gap: 6px; font-size: 13px;">
                     <span class="dot dot-offline"></span>
-                    <span>OFFLINE</span>
+                    <span>{{ t('detail.status_offline') }}</span>
                   </div>
                 </td>
                 <td>
@@ -245,15 +245,31 @@
           </table>
         </div>
 
-        <!-- Pagination Bar -->
-        <div v-if="totalPages > 1" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 0 4px; font-size: 13px; color: var(--text-muted);">
-          <div>
-            共 {{ filteredMembers.length }} 个成员，当前显示第 {{ (currentPage - 1) * pageSize + 1 }} ~ {{ Math.min(currentPage * pageSize, filteredMembers.length) }} 个
+        <!-- Pagination & Page Size Toolbar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 10px 4px 4px 4px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border);">
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+            <span>
+              {{ t('detail.members_page_stat', { total: filteredMembers.length, start: filteredMembers.length ? (currentPage - 1) * pageSize + 1 : 0, end: Math.min(currentPage * pageSize, filteredMembers.length) }) }}
+            </span>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>{{ t('common.per_page') }}:</span>
+              <select
+                v-model="pageSize"
+                class="form-control"
+                style="width: auto; height: 30px; padding: 2px 8px; font-size: 12px; cursor: pointer;"
+              >
+                <option :value="10">{{ t('common.items_per_page', { count: 10 }) }}</option>
+                <option :value="20">{{ t('common.items_per_page', { count: 20 }) }}</option>
+                <option :value="50">{{ t('common.items_per_page', { count: 50 }) }}</option>
+                <option :value="100">{{ t('common.items_per_page', { count: 100 }) }}</option>
+              </select>
+            </div>
           </div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button class="btn btn-secondary btn-sm" :disabled="currentPage <= 1" @click="currentPage--">上一页</button>
-            <span>第 {{ currentPage }} / {{ totalPages }} 页</span>
-            <button class="btn btn-secondary btn-sm" :disabled="currentPage >= totalPages" @click="currentPage++">下一页</button>
+
+          <div v-if="totalPages > 1" style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-secondary btn-sm" :disabled="currentPage <= 1" @click="currentPage--">{{ t('common.prev_page') }}</button>
+            <span>{{ t('common.page_of', { cur: currentPage, total: totalPages }) }}</span>
+            <button class="btn btn-secondary btn-sm" :disabled="currentPage >= totalPages" @click="currentPage++">{{ t('common.next_page') }}</button>
           </div>
         </div>
       </div>
@@ -282,7 +298,7 @@
               type="button"
               :class="['btn', selectedPreset.cidr === p.cidr ? 'btn-primary' : 'btn-secondary']"
               style="justify-content: flex-start; padding: 12px 16px; text-align: left;"
-              @click="selectedPreset = p"
+              @click="selectedPresetCidr = p.cidr"
             >
               <div>
                 <div style="font-weight: 700; font-size: 14px;">{{ p.cidr }}</div>
@@ -293,14 +309,14 @@
         </div>
 
         <div style="background: #f8fafc; border: 1px dashed var(--border); border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px;">
-          <div style="font-weight: 600; margin-bottom: 6px;">📋 配置预览:</div>
-          <div>• 路由规则: <code>{{ selectedPreset.cidr }}</code></div>
-          <div>• IP 分配池: <code>{{ selectedPreset.start }} ~ {{ selectedPreset.end }}</code></div>
-          <div>• 自动分配模式: <code>IPv4 Auto-assign (开启)</code></div>
+          <div style="font-weight: 600; margin-bottom: 6px;">📋 {{ t('detail.preview_title') }}</div>
+          <div>• {{ t('detail.preview_route') }} <code>{{ selectedPreset.cidr }}</code></div>
+          <div>• {{ t('detail.preview_pool') }} <code>{{ selectedPreset.start }} ~ {{ selectedPreset.end }}</code></div>
+          <div>• {{ t('detail.preview_mode') }} <code>{{ t('detail.preview_mode_on') }}</code></div>
         </div>
 
         <button class="btn btn-primary" @click="applyEasySetup" :disabled="applyingEasy">
-          <span v-if="applyingEasy">⏳ 正在应用...</span>
+          <span v-if="applyingEasy">⏳ {{ t('common.loading') }}</span>
           <span v-else>🚀 {{ t('detail.apply_easy') }}</span>
         </button>
       </div>
@@ -311,7 +327,7 @@
       <div class="card-header">
         <div>
           <h2 class="card-title">{{ t('detail.routes_title') }}</h2>
-          <p class="card-subtitle">ZeroTier 虚拟专用网络内部路由表规则</p>
+          <p class="card-subtitle">{{ t('detail.routes_subtitle') }}</p>
         </div>
         <button class="btn btn-primary btn-sm" @click="showAddRouteModal = true">
           <span>➕ {{ t('detail.add_route') }}</span>
@@ -330,13 +346,13 @@
           <tbody>
             <tr v-for="r in network.routes || []" :key="r.target">
               <td><span class="badge-id">{{ r.target }}</span></td>
-              <td><code>{{ r.via || 'Direct (LAN)' }}</code></td>
+              <td><code>{{ r.via || t('detail.direct_lan') }}</code></td>
               <td style="text-align: right;">
                 <button class="btn btn-danger btn-sm" @click="deleteRoute(r.target)">{{ t('common.delete') }}</button>
               </td>
             </tr>
             <tr v-if="(!network.routes || network.routes.length === 0)">
-              <td colspan="3" style="text-align: center; padding: 24px; color: var(--text-muted);">暂无路由规则</td>
+              <td colspan="3" style="text-align: center; padding: 24px; color: var(--text-muted);">{{ t('detail.no_routes') }}</td>
             </tr>
           </tbody>
         </table>
@@ -348,7 +364,7 @@
       <div class="card-header">
         <div>
           <h2 class="card-title">{{ t('detail.pools_title') }}</h2>
-          <p class="card-subtitle">新加入设备自动获取虚拟 IP 的起始与结束地址范围</p>
+          <p class="card-subtitle">{{ t('detail.pools_subtitle') }}</p>
         </div>
         <button class="btn btn-primary btn-sm" @click="showAddPoolModal = true">
           <span>➕ {{ t('detail.add_pool') }}</span>
@@ -373,7 +389,7 @@
               </td>
             </tr>
             <tr v-if="(!network.ipAssignmentPools || network.ipAssignmentPools.length === 0)">
-              <td colspan="3" style="text-align: center; padding: 24px; color: var(--text-muted);">暂无动态分配池</td>
+              <td colspan="3" style="text-align: center; padding: 24px; color: var(--text-muted);">{{ t('detail.no_pools') }}</td>
             </tr>
           </tbody>
         </table>
@@ -384,8 +400,8 @@
     <div v-if="currentTab === 'assign'" class="card">
       <div class="card-header">
         <div>
-          <h2 class="card-title">IP 分配模式开关</h2>
-          <p class="card-subtitle">控制网络对加入设备的 IPv4 与 IPv6 自动化配置策略</p>
+          <h2 class="card-title">{{ t('detail.assign_modes_title') }}</h2>
+          <p class="card-subtitle">{{ t('detail.assign_modes_subtitle') }}</p>
         </div>
       </div>
 
@@ -393,7 +409,7 @@
         <!-- IPv4 -->
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-md);">
           <div>
-            <div style="font-weight: 700; font-size: 15px;">IPv4 自动分配</div>
+            <div style="font-weight: 700; font-size: 15px;">{{ t('detail.v4_auto_title') }}</div>
             <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">{{ t('detail.v4_auto') }}</div>
           </div>
           <label class="switch">
@@ -411,7 +427,7 @@
           <div style="font-weight: 700; font-size: 15px;">{{ t('detail.v6_title') }}</div>
 
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-size: 14px;">ZT 6plane (/80 每个设备独立网段)</span>
+            <span style="font-size: 14px;">{{ t('detail.v6_6plane') }}</span>
             <label class="switch">
               <input
                 type="checkbox"
@@ -423,7 +439,7 @@
           </div>
 
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-size: 14px;">ZT rfc4193 (/128 每个设备固定)</span>
+            <span style="font-size: 14px;">{{ t('detail.v6_rfc4193') }}</span>
             <label class="switch">
               <input
                 type="checkbox"
@@ -435,7 +451,7 @@
           </div>
 
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <span style="font-size: 14px;">IPv6 Auto-assign from IP Pool</span>
+            <span style="font-size: 14px;">{{ t('detail.v6_pool') }}</span>
             <label class="switch">
               <input
                 type="checkbox"
@@ -454,20 +470,20 @@
       <div class="card-header">
         <div>
           <h2 class="card-title">{{ t('detail.dns_title') }}</h2>
-          <p class="card-subtitle">为支持 ZeroTier 客户端 DNS 接管的设备下发域名与服务器</p>
+          <p class="card-subtitle">{{ t('detail.dns_subtitle') }}</p>
         </div>
       </div>
 
       <form @submit.prevent="saveDns" style="max-width: 500px;">
         <div class="form-group">
           <label class="form-label">{{ t('detail.domain') }}</label>
-          <input v-model="dnsDomain" type="text" class="form-control" placeholder="例如: corp.lan" />
+          <input v-model="dnsDomain" type="text" class="form-control" placeholder="corp.lan" />
         </div>
         <div class="form-group">
           <label class="form-label">{{ t('detail.dns_servers') }}</label>
-          <textarea v-model="dnsServers" class="form-control" rows="3" placeholder="例如: 10.147.17.1, 1.1.1.1"></textarea>
+          <textarea v-model="dnsServers" class="form-control" rows="3" placeholder="10.147.17.1, 1.1.1.1"></textarea>
         </div>
-        <button type="submit" class="btn btn-primary">保存 DNS 配置</button>
+        <button type="submit" class="btn btn-primary">{{ t('detail.save_dns') }}</button>
       </form>
     </div>
 
@@ -480,13 +496,13 @@
     </div>
 
     <!-- Add Member IP Modal -->
-    <Modal v-model="showAddIpModal" title="为成员分配虚拟 IP">
+    <Modal v-model="showAddIpModal" :title="t('detail.add_ip_modal_title')">
       <div class="form-group">
-        <label class="form-label">成员节点 ID</label>
+        <label class="form-label">{{ t('detail.member_node_id') }}</label>
         <input :value="selectedMember?.id" type="text" class="form-control" disabled />
       </div>
       <div class="form-group">
-        <label class="form-label">IPv4 地址</label>
+        <label class="form-label">{{ t('detail.ipv4_address') }}</label>
         <input v-model="newIpInput" type="text" class="form-control" :placeholder="t('detail.ip_placeholder')" required />
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
@@ -496,14 +512,14 @@
     </Modal>
 
     <!-- Add Route Modal -->
-    <Modal v-model="showAddRouteModal" title="添加网络路由">
+    <Modal v-model="showAddRouteModal" :title="t('detail.add_route_modal_title')">
       <div class="form-group">
-        <label class="form-label">目标网段 (CIDR)</label>
-        <input v-model="newRouteTarget" type="text" class="form-control" placeholder="例如: 192.168.10.0/24" required />
+        <label class="form-label">{{ t('detail.target_cidr') }}</label>
+        <input v-model="newRouteTarget" type="text" class="form-control" placeholder="192.168.10.0/24" required />
       </div>
       <div class="form-group">
-        <label class="form-label">网关 IP (可选)</label>
-        <input v-model="newRouteVia" type="text" class="form-control" placeholder="留空代表局域网直连" />
+        <label class="form-label">{{ t('detail.gateway') }}</label>
+        <input v-model="newRouteVia" type="text" class="form-control" :placeholder="t('detail.gateway_hint')" />
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
         <button type="button" class="btn btn-secondary" @click="showAddRouteModal = false">{{ t('common.cancel') }}</button>
@@ -512,14 +528,14 @@
     </Modal>
 
     <!-- Add Pool Modal -->
-    <Modal v-model="showAddPoolModal" title="添加 IP 分配池">
+    <Modal v-model="showAddPoolModal" :title="t('detail.add_pool_modal_title')">
       <div class="form-group">
-        <label class="form-label">起始 IP</label>
-        <input v-model="newPoolStart" type="text" class="form-control" placeholder="例如: 10.147.17.1" required />
+        <label class="form-label">{{ t('detail.pool_start') }}</label>
+        <input v-model="newPoolStart" type="text" class="form-control" placeholder="10.147.17.1" required />
       </div>
       <div class="form-group">
-        <label class="form-label">结束 IP</label>
-        <input v-model="newPoolEnd" type="text" class="form-control" placeholder="例如: 10.147.17.254" required />
+        <label class="form-label">{{ t('detail.pool_end') }}</label>
+        <input v-model="newPoolEnd" type="text" class="form-control" placeholder="10.147.17.254" required />
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
         <button type="button" class="btn btn-secondary" @click="showAddPoolModal = false">{{ t('common.cancel') }}</button>
@@ -553,20 +569,23 @@ const memberSearch = ref('');
 
 // Pagination
 const currentPage = ref(1);
-const pageSize = 20;
+const pageSize = ref(20);
 
 // Name Editing
 const editingName = ref(false);
 const nameInput = ref('');
 
 // Easy Setup presets
-const easyPresets = [
-  { cidr: '10.147.17.0/24', start: '10.147.17.1', end: '10.147.17.254', desc: '经典 10.147.17.* 私网' },
-  { cidr: '192.168.192.0/24', start: '192.168.192.1', end: '192.168.192.254', desc: '标准 C 类内网' },
-  { cidr: '172.24.0.0/24', start: '172.24.0.1', end: '172.24.0.254', desc: 'B 类私有段 172.24.*' },
-  { cidr: '10.244.0.0/24', start: '10.244.0.1', end: '10.244.0.254', desc: '大局域网 10.244.*' },
-];
-const selectedPreset = ref(easyPresets[0]);
+const easyPresets = computed(() => [
+  { cidr: '10.147.17.0/24', start: '10.147.17.1', end: '10.147.17.254', desc: t('detail.preset_1') },
+  { cidr: '192.168.192.0/24', start: '192.168.192.1', end: '192.168.192.254', desc: t('detail.preset_2') },
+  { cidr: '172.24.0.0/24', start: '172.24.0.1', end: '172.24.0.254', desc: t('detail.preset_3') },
+  { cidr: '10.244.0.0/24', start: '10.244.0.1', end: '10.244.0.254', desc: t('detail.preset_4') },
+]);
+const selectedPresetCidr = ref('10.147.17.0/24');
+const selectedPreset = computed(() => {
+  return easyPresets.value.find(p => p.cidr === selectedPresetCidr.value) || easyPresets.value[0];
+});
 const applyingEasy = ref(false);
 
 // DNS form
@@ -588,7 +607,7 @@ const newPoolEnd = ref('');
 
 const tabList = computed(() => [
   { id: 'members', icon: '👥', label: t('detail.tab_members'), badge: members.value.length },
-  { id: 'easy', icon: '🪄', label: t('detail.tab_easy') },
+  { id: 'easy', icon: '⚡', label: t('detail.tab_easy') },
   { id: 'routes', icon: '🔀', label: t('detail.tab_routes'), badge: (network.value?.routes || []).length },
   { id: 'pools', icon: '🏊', label: t('detail.tab_pools'), badge: (network.value?.ipAssignmentPools || []).length },
   { id: 'assign', icon: '⚙️', label: t('detail.tab_assign') },
@@ -607,15 +626,15 @@ const filteredMembers = computed(() => {
 });
 
 const totalPages = computed(() => {
-  return Math.ceil(filteredMembers.value.length / pageSize) || 1;
+  return Math.ceil(filteredMembers.value.length / pageSize.value) || 1;
 });
 
 const paginatedMembers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredMembers.value.slice(start, start + pageSize);
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredMembers.value.slice(start, start + pageSize.value);
 });
 
-watch(memberSearch, () => {
+watch([memberSearch, pageSize], () => {
   currentPage.value = 1;
 });
 
@@ -642,7 +661,7 @@ async function loadData() {
     loadMembers();
   } catch (err) {
     console.error('Failed to load network:', err);
-    error.value = err.message || '获取网络详情失败';
+    error.value = err.message || t('detail.load_fail');
     loading.value = false;
   }
 }
@@ -656,7 +675,7 @@ async function loadMembers() {
     ztAddress.value = memRes.zt_address || '';
   } catch (err) {
     console.error('Failed to load members:', err);
-    showToast('成员设备列表加载失败: ' + err.message, 'warning');
+    showToast(t('toast.members_load_fail') + ': ' + err.message, 'warning');
   } finally {
     membersLoading.value = false;
   }
@@ -677,7 +696,7 @@ async function saveName() {
     await api.renameNetwork(nwid, newName);
     network.value.name = newName;
     editingName.value = false;
-    showToast('网络名称修改成功');
+    showToast(t('toast.name_updated'));
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -688,7 +707,7 @@ async function togglePrivate() {
   try {
     await api.setPrivate(nwid, nextPrivate);
     network.value.private = nextPrivate;
-    showToast(nextPrivate ? '已切换为私有模式' : '已切换为公开模式');
+    showToast(nextPrivate ? t('toast.mode_private') : t('toast.mode_public'));
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -700,7 +719,7 @@ async function toggleMemberAuth(id, authorized) {
     await api.setMemberAuth(nwid, id, authorized);
     const m = members.value.find(x => x.id === id);
     if (m) m.authorized = authorized;
-    showToast(authorized ? '设备已授权' : '已取消授权');
+    showToast(authorized ? t('toast.auth_granted') : t('toast.auth_revoked'));
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -711,7 +730,7 @@ async function toggleMemberBridge(id, activeBridge) {
     await api.setMemberBridge(nwid, id, activeBridge);
     const m = members.value.find(x => x.id === id);
     if (m) m.activeBridge = activeBridge;
-    showToast('桥接模式已更新');
+    showToast(t('toast.bridge_updated'));
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -722,7 +741,7 @@ async function saveMemberName(id, name) {
     await api.setMemberName(nwid, id, name);
     const m = members.value.find(x => x.id === id);
     if (m) m.name = name;
-    showToast('设备备注已保存');
+    showToast(t('toast.remark_saved'));
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -738,7 +757,7 @@ async function submitAddIp() {
   if (!newIpInput.value.trim() || !selectedMember.value) return;
   try {
     await api.addMemberIp(nwid, selectedMember.value.id, newIpInput.value.trim());
-    showToast('虚拟 IP 添加成功');
+    showToast(t('toast.ip_added'));
     showAddIpModal.value = false;
     await loadMembers();
   } catch (err) {
@@ -749,7 +768,7 @@ async function submitAddIp() {
 async function deleteMemberIp(id, index) {
   try {
     await api.deleteMemberIp(nwid, id, index);
-    showToast('虚拟 IP 已删除');
+    showToast(t('toast.ip_deleted'));
     await loadMembers();
   } catch (err) {
     showToast(err.message, 'error');
@@ -757,10 +776,10 @@ async function deleteMemberIp(id, index) {
 }
 
 async function confirmDeleteMember(member) {
-  if (!confirm(`确定要从网络中删除设备 ${member.name || member.id} 吗？`)) return;
+  if (!confirm(t('toast.member_delete_confirm', { name: member.name || member.id }))) return;
   try {
     await api.deleteMember(nwid, member.id);
-    showToast('成员已删除');
+    showToast(t('toast.member_deleted'));
     members.value = members.value.filter(m => m.id !== member.id);
   } catch (err) {
     showToast(err.message, 'error');
@@ -785,7 +804,7 @@ async function applyEasySetup() {
     const routes = [{ target: p.cidr, via: null }];
     const pools = [{ ipRangeStart: p.start, ipRangeEnd: p.end }];
     await api.easySetup(nwid, routes, pools, { zt: true });
-    showToast('快速向导配置已生效！');
+    showToast(t('toast.easy_applied'));
     await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
@@ -799,7 +818,7 @@ async function submitAddRoute() {
   if (!newRouteTarget.value.trim()) return;
   try {
     await api.addRoute(nwid, newRouteTarget.value.trim(), newRouteVia.value.trim());
-    showToast('路由规则添加成功');
+    showToast(t('toast.route_added'));
     showAddRouteModal.value = false;
     newRouteTarget.value = '';
     newRouteVia.value = '';
@@ -810,10 +829,10 @@ async function submitAddRoute() {
 }
 
 async function deleteRoute(target) {
-  if (!confirm(`确定删除路由规则 ${target} 吗？`)) return;
+  if (!confirm(t('toast.route_delete_confirm', { target }))) return;
   try {
     await api.deleteRoute(nwid, target);
-    showToast('路由已删除');
+    showToast(t('toast.route_deleted'));
     await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
@@ -825,7 +844,7 @@ async function submitAddPool() {
   if (!newPoolStart.value.trim() || !newPoolEnd.value.trim()) return;
   try {
     await api.addPool(nwid, newPoolStart.value.trim(), newPoolEnd.value.trim());
-    showToast('分配池添加成功');
+    showToast(t('toast.pool_added'));
     showAddPoolModal.value = false;
     newPoolStart.value = '';
     newPoolEnd.value = '';
@@ -836,10 +855,10 @@ async function submitAddPool() {
 }
 
 async function deletePool(start, end) {
-  if (!confirm(`确定删除分配池 ${start} ~ ${end} 吗？`)) return;
+  if (!confirm(t('toast.pool_delete_confirm', { start, end }))) return;
   try {
     await api.deletePool(nwid, start, end);
-    showToast('分配池已删除');
+    showToast(t('toast.pool_deleted'));
     await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');
@@ -860,7 +879,7 @@ async function updateAssignModes(key, value) {
     if (!network.value.v6AssignMode) network.value.v6AssignMode = {};
     network.value.v4AssignMode = v4;
     network.value.v6AssignMode = v6;
-    showToast('分配模式已更新');
+    showToast(t('toast.assign_updated'));
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -871,7 +890,7 @@ async function saveDns() {
   try {
     const s = dnsServers.value.split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
     await api.updateDns(nwid, dnsDomain.value.trim(), s);
-    showToast('DNS 配置已保存');
+    showToast(t('toast.dns_saved'));
     await refreshNetworkOnly();
   } catch (err) {
     showToast(err.message, 'error');

@@ -56,7 +56,7 @@
           <span>👤</span>
           <strong>{{ currentUser.name }}</strong>
         </span>
-        <button class="btn btn-sm btn-secondary" @click="handleLogout" title="退出登录" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">
+        <button class="btn btn-sm btn-secondary" @click="handleLogout" :title="t('nav.logout')" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">
           <span>🚪</span>
           <span>{{ t('nav.logout') }}</span>
         </button>

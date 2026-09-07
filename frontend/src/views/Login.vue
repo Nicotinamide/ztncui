@@ -97,7 +97,7 @@ async function handleSubmit() {
   try {
     const res = await api.login(username.value, password.value);
     if (res.success && res.user) {
-      showToast('登录成功！');
+      showToast(t('login.login_success'));
       emit('login-success', res.user);
       router.push('/controller');
     }

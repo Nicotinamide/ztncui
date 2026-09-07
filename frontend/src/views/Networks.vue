@@ -8,7 +8,7 @@
       <div style="display: flex; gap: 10px;">
         <button class="btn btn-secondary" @click="fetchNetworks" :disabled="loading">
           <span>🔄</span>
-          <span>刷新</span>
+          <span>{{ t('common.refresh') }}</span>
         </button>
         <button class="btn btn-primary" @click="showCreateModal = true">
           <span>➕</span>
@@ -28,7 +28,7 @@
           />
         </div>
         <div style="font-size: 13px; color: var(--text-muted);">
-          共 {{ filteredNetworks.length }} 个网络
+          {{ t('networks.total_count').replace('{count}', filteredNetworks.length) }}
         </div>
       </div>
 
@@ -49,7 +49,7 @@
                   :to="'/networks/' + net.nwid"
                   style="font-weight: 600; font-size: 15px; color: var(--primary); text-decoration: none;"
                 >
-                  {{ net.name || 'Unnamed Network' }}
+                  {{ net.name || t('common.unnamed_network') }}
                 </router-link>
               </td>
               <td>
@@ -111,26 +111,26 @@
         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
           <button type="button" class="btn btn-secondary" @click="showCreateModal = false">{{ t('common.cancel') }}</button>
           <button type="submit" class="btn btn-primary" :disabled="creating">
-            <span v-if="creating">⏳ 创建中...</span>
-            <span v-else>确认创建</span>
+            <span v-if="creating">⏳ {{ t('common.loading') }}</span>
+            <span v-else>{{ t('common.confirm') }}</span>
           </button>
         </div>
       </form>
     </Modal>
 
     <!-- Delete Confirm Modal -->
-    <Modal v-model="showDeleteModal" title="确认删除网络">
+    <Modal v-model="showDeleteModal" :title="t('networks.delete_modal_title')">
       <p style="color: var(--text-main); font-size: 14px; line-height: 1.6;">
-        确定要彻底删除网络 <strong>{{ deleteTarget?.name }}</strong> (<code style="color: var(--primary);">{{ deleteTarget?.nwid }}</code>) 吗？
+        {{ t('networks.delete_confirm_text') }} <strong>{{ deleteTarget?.name || t('common.unnamed_network') }}</strong> (<code style="color: var(--primary);">{{ deleteTarget?.nwid }}</code>)?
       </p>
       <p style="color: var(--danger); font-size: 13px; margin-top: 8px;">
-        ⚠️ 注意：此操作不可撤销，网络内所有成员连接将立即断开！
+        ⚠️ {{ t('networks.delete_warning') }}
       </p>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
         <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">{{ t('common.cancel') }}</button>
         <button type="button" class="btn btn-danger" @click="handleDelete" :disabled="deleting">
-          <span v-if="deleting">⏳ 正在删除...</span>
-          <span v-else>确认彻底删除</span>
+          <span v-if="deleting">⏳ {{ t('common.loading') }}</span>
+          <span v-else>{{ t('networks.delete_confirm_btn') }}</span>
         </button>
       </div>
     </Modal>
@@ -184,7 +184,7 @@ async function handleCreate() {
   creating.value = true;
   try {
     const res = await api.createNetwork(newNetName.value.trim());
-    showToast('网络创建成功！');
+    showToast(t('toast.network_created'));
     showCreateModal.value = false;
     newNetName.value = '';
     await fetchNetworks();
@@ -208,7 +208,7 @@ async function handleDelete() {
   deleting.value = true;
   try {
     await api.deleteNetwork(deleteTarget.value.nwid);
-    showToast('网络已成功删除');
+    showToast(t('toast.network_deleted'));
     showDeleteModal.value = false;
     deleteTarget.value = null;
     await fetchNetworks();

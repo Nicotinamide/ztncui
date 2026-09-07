@@ -73,7 +73,7 @@
     </Modal>
 
     <!-- Change Password Modal -->
-    <Modal v-model="showPassModal" :title="'修改密码: ' + (selectedUser?.name || '')">
+    <Modal v-model="showPassModal" :title="t('users.change_pass_user', { name: selectedUser?.name || '' })">
       <form @submit.prevent="handleChangePassword">
         <div class="form-group">
           <label class="form-label">{{ t('users.new_pass') }}</label>
@@ -127,12 +127,12 @@ async function fetchUsers() {
 
 async function handleAddUser() {
   if (newPassword.value.length < 10) {
-    showToast('密码长度至少需要 10 个字符', 'error');
+    showToast(t('toast.pass_min_length'), 'error');
     return;
   }
   try {
     await api.createUser(newUsername.value.trim(), newPassword.value);
-    showToast('用户添加成功');
+    showToast(t('toast.user_added'));
     showAddModal.value = false;
     newUsername.value = '';
     newPassword.value = '';
@@ -151,16 +151,16 @@ function openChangePassModal(user) {
 
 async function handleChangePassword() {
   if (changePass1.value !== changePass2.value) {
-    showToast('两次输入的密码不一致', 'error');
+    showToast(t('toast.pass_mismatch'), 'error');
     return;
   }
   if (changePass1.value.length < 10) {
-    showToast('密码长度至少需要 10 个字符', 'error');
+    showToast(t('toast.pass_min_length'), 'error');
     return;
   }
   try {
     await api.updatePassword(selectedUser.value.name, changePass1.value);
-    showToast('密码修改成功');
+    showToast(t('toast.pass_updated'));
     showPassModal.value = false;
     await fetchUsers();
   } catch (err) {
@@ -169,10 +169,10 @@ async function handleChangePassword() {
 }
 
 async function confirmDeleteUser(user) {
-  if (!confirm(`确定要删除管理员账号 ${user.name} 吗？`)) return;
+  if (!confirm(t('users.delete_user_confirm_named', { name: user.name }))) return;
   try {
     const res = await api.deleteUser(user.name);
-    showToast('用户已删除');
+    showToast(t('toast.user_deleted'));
     if (res.selfDeleted) {
       router.push('/login');
     } else {

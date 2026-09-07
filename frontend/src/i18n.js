@@ -25,7 +25,7 @@ export function setLanguage(lang) {
   }
 }
 
-export function t(path) {
+export function t(path, params) {
   const keys = path.split('.');
   let current = messages[currentLang.value] || messages['en-US'];
   for (const k of keys) {
@@ -41,8 +41,14 @@ export function t(path) {
           return path;
         }
       }
-      return fallback;
+      current = fallback;
+      break;
     }
+  }
+  if (typeof current === 'string' && params && typeof params === 'object') {
+    return current.replace(/\{(\w+)\}/g, (match, p1) => {
+      return params[p1] !== undefined ? params[p1] : match;
+    });
   }
   return current;
 }
