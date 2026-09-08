@@ -81,12 +81,69 @@ function clearAttempts(req) {
   if (username) loginAttempts.delete(`user:${username}`);
 }
 
-// --- Auth Middleware ---
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+
+// --- API Token Management ---
+function getApiToken() {
+  if (process.env.API_TOKEN && process.env.API_TOKEN.trim()) {
+    return process.env.API_TOKEN.trim();
+  }
+  const tokenPaths = [
+    path.join(process.cwd(), 'etc', 'api_token.secret'),
+    path.join(__dirname, '..', 'etc', 'api_token.secret'),
+    path.join(__dirname, '..', '..', 'etc', 'api_token.secret')
+  ];
+  for (const p of tokenPaths) {
+    try {
+      if (fs.existsSync(p)) {
+        const s = fs.readFileSync(p, 'utf8').trim();
+        if (s.length >= 16) return s;
+      }
+    } catch {}
+  }
+
+  const newToken = 'zt_' + crypto.randomBytes(24).toString('hex');
+  for (const p of tokenPaths) {
+    try {
+      const dir = path.dirname(p);
+      if (fs.existsSync(dir)) {
+        fs.writeFileSync(p, newToken, { mode: 0o600, encoding: 'utf8' });
+        console.log(`[API] Generated permanent API Token in ${p}`);
+        break;
+      }
+    } catch {}
+  }
+  return newToken;
+}
+
+const API_TOKEN = getApiToken();
+
+// --- Auth Middleware (Supports Session Cookie and Bearer API Token) ---
 function requireAuth(req, res, next) {
+  // 1. Check API Token header or query param
+  const authHeader = req.headers['authorization'];
+  const tokenHeader = req.headers['x-api-token'];
+  let candidateToken = null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    candidateToken = authHeader.substring(7).trim();
+  } else if (tokenHeader) {
+    candidateToken = tokenHeader.trim();
+  } else if (req.query && req.query.token) {
+    candidateToken = req.query.token.trim();
+  }
+
+  if (candidateToken && candidateToken === API_TOKEN) {
+    req.isApiCaller = true;
+    return next();
+  }
+
+  // 2. Check Session
   if (req.session && req.session.user) {
     return next();
   }
-  return res.status(401).json({ success: false, error: 'Unauthorized, please log in' });
+  return res.status(401).json({ success: false, error: 'Unauthorized: Invalid session or API token' });
 }
 
 // ==========================================
@@ -170,6 +227,13 @@ router.get('/auth/me', (req, res) => {
     });
   }
   return res.json({ success: true, user: null });
+});
+
+router.get('/auth/token', (req, res) => {
+  if (req.session && req.session.user) {
+    return res.json({ success: true, token: API_TOKEN });
+  }
+  return res.status(401).json({ success: false, error: 'Unauthorized' });
 });
 
 // ==========================================
