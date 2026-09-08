@@ -117,12 +117,15 @@ router.post('/auth/login', async (req, res) => {
       req.session.regenerate((regenErr) => {
         if (regenErr) return res.status(500).json({ success: false, error: 'Session regeneration error' });
         req.session.user = user;
-        return res.json({
-          success: true,
-          user: {
-            name: user.name,
-            pass_set: user.pass_set
-          }
+        req.session.save((saveErr) => {
+          if (saveErr) return res.status(500).json({ success: false, error: 'Session save error' });
+          return res.json({
+            success: true,
+            user: {
+              name: user.name,
+              pass_set: user.pass_set
+            }
+          });
         });
       });
     } else {
