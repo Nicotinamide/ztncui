@@ -25,10 +25,17 @@
     "nodemon": "^2.0.7"
   },
   "pkg": {
+    "scripts": [
+      "controllers/**/*.js",
+      "routes/**/*.js"
+    ],
     "assets": [
       "public/**/*",
       "etc/**/*",
-      "dist/**/*"
+      "dist/**/*",
+      "node_modules/argon2/build/Release/argon2.node",
+      "node_modules/argon2/build/Release/*.node",
+      "node_modules/argon2/lib/binding/**/*"
     ]
   }
 }
