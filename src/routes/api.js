@@ -105,20 +105,30 @@ function getApiToken() {
   }
 
   const newToken = 'zt_' + crypto.randomBytes(24).toString('hex');
+  saveApiToken(newToken);
+  return newToken;
+}
+
+function saveApiToken(newToken) {
+  const tokenPaths = [
+    path.join(process.cwd(), 'etc', 'api_token.secret'),
+    path.join(__dirname, '..', 'etc', 'api_token.secret'),
+    path.join(__dirname, '..', '..', 'etc', 'api_token.secret')
+  ];
   for (const p of tokenPaths) {
     try {
       const dir = path.dirname(p);
       if (fs.existsSync(dir)) {
         fs.writeFileSync(p, newToken, { mode: 0o600, encoding: 'utf8' });
-        console.log(`[API] Generated permanent API Token in ${p}`);
-        break;
+        console.log(`[API] Saved permanent API Token in ${p}`);
+        return true;
       }
     } catch {}
   }
-  return newToken;
+  return false;
 }
 
-const API_TOKEN = getApiToken();
+let API_TOKEN = getApiToken();
 
 // --- Auth Middleware (Supports Session Cookie and Bearer API Token) ---
 function requireAuth(req, res, next) {
@@ -234,6 +244,17 @@ router.get('/auth/token', (req, res) => {
     return res.json({ success: true, token: API_TOKEN });
   }
   return res.status(401).json({ success: false, error: 'Unauthorized' });
+});
+
+router.post('/auth/token/regenerate', (req, res) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  const newToken = 'zt_' + crypto.randomBytes(24).toString('hex');
+  saveApiToken(newToken);
+  API_TOKEN = newToken;
+  console.log(`[API] Regenerated API Token by user ${req.session.user.name}`);
+  return res.json({ success: true, token: API_TOKEN });
 });
 
 // ==========================================

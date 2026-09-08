@@ -43,6 +43,8 @@ export const api = {
   login: (username, password) => request('/auth/login', { method: 'POST', body: { username, password } }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   getMe: () => request('/auth/me'),
+  getApiToken: () => request('/auth/token'),
+  regenerateApiToken: () => request('/auth/token/regenerate', { method: 'POST' }),
 
   // Status & Peers
   getStatus: () => request('/status'),
