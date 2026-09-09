@@ -36,11 +36,11 @@
       <button
         class="btn btn-sm"
         @click="openTokenModal"
-        title="查看与管理 API Token"
+        :title="t('api_token.modal_title')"
         style="background: rgba(255,180,0,0.15); color: #ffb400; border: 1px solid rgba(255,180,0,0.35); font-weight: 600; display: flex; align-items: center; gap: 6px; padding: 4px 10px;"
       >
         <span>🔑</span>
-        <span>API Token</span>
+        <span>{{ t('api_token.nav_btn') }}</span>
       </button>
 
       <!-- Language Switcher -->
@@ -77,37 +77,37 @@
     <!-- API Token Modal -->
     <Teleport to="body">
       <div v-if="showTokenModal" class="modal-overlay" @click.self="showTokenModal = false">
-        <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-content" style="max-width: 500px;">
           <div class="modal-header">
             <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
               <span>🔑</span>
-              <span>API Token 接口凭据管理</span>
+              <span>{{ t('api_token.modal_title') }}</span>
             </h3>
             <button @click="showTokenModal = false" style="background: transparent; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer;">✕</button>
           </div>
 
           <div class="modal-body">
             <!-- Master Switch Box -->
-            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
                 <div>
-                  <div style="font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
-                    <span>API 访问权限总开关</span>
+                  <div style="font-size: 13.5px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                    <span>{{ t('api_token.switch_title') }}</span>
                     <span
                       :style="{
                         fontSize: '11px',
                         padding: '2px 8px',
-                        borderRadius: '12px',
+                        borderRadius: '10px',
                         fontWeight: '600',
                         background: apiEnabled ? '#dcfce7' : '#f1f5f9',
                         color: apiEnabled ? '#15803d' : '#64748b'
                       }"
                     >
-                      {{ apiEnabled ? '● 已开启' : '○ 已关闭 (默认安全)' }}
+                      {{ apiEnabled ? t('api_token.status_enabled') : t('api_token.status_disabled') }}
                     </span>
                   </div>
-                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.5;">
-                    出于系统安全考量，API 接口默认关闭。若需使用 SysMonitor 桌面微件或外部脚本，请在此手动开启。
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+                    {{ apiEnabled ? t('api_token.hint_enabled') : t('api_token.hint_disabled') }}
                   </div>
                 </div>
 
@@ -115,38 +115,21 @@
                   @click="handleToggleAccess"
                   :disabled="isToggling"
                   :class="['btn btn-sm', apiEnabled ? 'btn-danger' : 'btn-success']"
-                  style="white-space: nowrap; min-width: 90px; padding: 6px 14px; font-weight: 600;"
+                  style="white-space: nowrap; min-width: 72px; padding: 5px 12px; font-weight: 600;"
                 >
-                  {{ isToggling ? '处理中...' : (apiEnabled ? '关闭 API' : '开启 API') }}
+                  {{ isToggling ? t('common.loading') : (apiEnabled ? t('api_token.btn_disable') : t('api_token.btn_enable')) }}
                 </button>
               </div>
             </div>
 
-            <!-- Status Alert -->
-            <div
-              v-if="!apiEnabled"
-              style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e; display: flex; align-items: center; gap: 8px;"
-            >
-              <span>🔒</span>
-              <span><strong>默认安全保护中</strong>：当前 API 处于关闭状态，外部调用将被服务端拒绝 (HTTP 403)。开启后方可同步。</span>
-            </div>
-
-            <div
-              v-else
-              style="background: #f0fdf4; border: 1px solid #dcfce7; border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: #166534; display: flex; align-items: center; gap: 8px;"
-            >
-              <span>🟢</span>
-              <span><strong>API 运行中</strong>：持有下方只读 Token 的客户端（如 SysMonitor 悬浮窗）可实时查询成员数据。</span>
-            </div>
-
             <!-- Token Row -->
-            <div style="margin-bottom: 16px;" :style="{ opacity: apiEnabled ? 1 : 0.65 }">
+            <div style="margin-bottom: 16px;" :style="{ opacity: apiEnabled ? 1 : 0.6 }">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <label style="font-size: 12px; font-weight: 600; color: var(--text);">
-                  控制器只读 Token
+                  {{ t('api_token.token_label') }}
                 </label>
                 <span v-if="!apiEnabled" style="font-size: 11px; color: #b45309; font-weight: 500;">
-                  (API 关闭中，暂不可用)
+                  ({{ t('api_token.token_disabled_tag') }})
                 </span>
               </div>
               <div style="display: flex; gap: 8px;">
@@ -155,7 +138,7 @@
                   <button
                     @click="isTokenVisible = !isTokenVisible"
                     style="background: transparent; border: none; cursor: pointer; color: #94a3b8; font-size: 14px; padding: 2px;"
-                    :title="isTokenVisible ? '隐藏 Token' : '显示完整 Token'"
+                    :title="isTokenVisible ? '🙈' : '👁'"
                   >
                     {{ isTokenVisible ? '🙈' : '👁' }}
                   </button>
@@ -165,7 +148,6 @@
                   @click="copyToken"
                   :disabled="!apiEnabled"
                   style="white-space: nowrap;"
-                  :title="!apiEnabled ? '请先开启上方 API 开关' : '复制 Token'"
                 >
                   <span>📋</span>
                   <span>{{ copyBtnText }}</span>
@@ -174,21 +156,21 @@
             </div>
 
             <!-- Regenerate Box -->
-            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 12px;">
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 12px 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
                 <div>
-                  <div style="font-size: 13px; font-weight: 600; color: #dc2626;">轮转 / 重置 Token</div>
-                  <div style="font-size: 11.5px; color: #7f1d1d; margin-top: 2px;">若怀疑 Token 泄露可重新生成。重新生成后旧 Token 将立即失效。</div>
+                  <div style="font-size: 13px; font-weight: 600; color: #dc2626;">{{ t('api_token.regenerate_title') }}</div>
+                  <div style="font-size: 11.5px; color: #7f1d1d; margin-top: 2px;">{{ t('api_token.regenerate_hint') }}</div>
                 </div>
                 <button class="btn btn-sm btn-danger" @click="handleRegenerate" :disabled="isRegenerating" style="white-space: nowrap;">
-                  {{ isRegenerating ? '生成中...' : '重新生成' }}
+                  {{ isRegenerating ? t('common.loading') : t('api_token.regenerate_btn') }}
                 </button>
               </div>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button class="btn btn-secondary" @click="showTokenModal = false">关闭</button>
+            <button class="btn btn-secondary" @click="showTokenModal = false">{{ t('common.close') }}</button>
           </div>
         </div>
       </div>
@@ -217,17 +199,18 @@ const apiEnabled = ref(false);
 const isTokenVisible = ref(false);
 const isRegenerating = ref(false);
 const isToggling = ref(false);
-const copyBtnText = ref('复制');
+const copyBtnText = computed(() => isCopied.value ? t('api_token.copied') : t('api_token.copy_btn'));
+const isCopied = ref(false);
 
 const maskedToken = computed(() => {
-  if (!apiToken.value) return '加载中...';
+  if (!apiToken.value) return t('common.loading');
   if (apiToken.value.length <= 8) return '••••••••••••••••';
   return apiToken.value.substring(0, 5) + '••••••••••••••••' + apiToken.value.substring(apiToken.value.length - 4);
 });
 
 async function openTokenModal() {
   showTokenModal.value = true;
-  copyBtnText.value = '复制';
+  isCopied.value = false;
   isTokenVisible.value = false;
   try {
     const res = await api.getApiToken();
@@ -236,7 +219,7 @@ async function openTokenModal() {
       apiEnabled.value = !!res.enabled;
     }
   } catch (err) {
-    showToast(err.message || '获取 Token 失败', 'error');
+    showToast(err.message || t('common.error'), 'error');
   }
 }
 
@@ -248,10 +231,10 @@ async function handleToggleAccess() {
     if (res.success) {
       apiEnabled.value = !!res.enabled;
       if (res.token) apiToken.value = res.token;
-      showToast(targetState ? '✅ API 访问已手动开启！' : '🔒 API 访问已关闭', targetState ? 'success' : 'info');
+      showToast(targetState ? t('api_token.enable_success') : t('api_token.disable_success'), targetState ? 'success' : 'info');
     }
   } catch (err) {
-    showToast(err.message || '切换 API 状态失败', 'error');
+    showToast(err.message || t('common.error'), 'error');
   } finally {
     isToggling.value = false;
   }
@@ -260,18 +243,18 @@ async function handleToggleAccess() {
 function copyToken() {
   if (!apiToken.value || !apiEnabled.value) return;
   navigator.clipboard.writeText(apiToken.value).then(() => {
-    copyBtnText.value = '已复制!';
-    showToast('API Token 已复制到剪贴板', 'success');
+    isCopied.value = true;
+    showToast(t('common.copied'), 'success');
     setTimeout(() => {
-      copyBtnText.value = '复制';
+      isCopied.value = false;
     }, 2000);
   }).catch(() => {
-    showToast('复制失败，请手动选取复制', 'error');
+    showToast(t('common.error'), 'error');
   });
 }
 
 async function handleRegenerate() {
-  if (!confirm('确定要重新生成 API Token 吗？旧 Token 将立即失效，所有已配置的桌面微件需同步更新。')) {
+  if (!confirm(t('api_token.regenerate_confirm'))) {
     return;
   }
   isRegenerating.value = true;
@@ -279,10 +262,10 @@ async function handleRegenerate() {
     const res = await api.regenerateApiToken();
     if (res.success && res.token) {
       apiToken.value = res.token;
-      showToast('API Token 重新生成成功！', 'success');
+      showToast(t('api_token.regenerate_success'), 'success');
     }
   } catch (err) {
-    showToast(err.message || '重新生成失败', 'error');
+    showToast(err.message || t('common.error'), 'error');
   } finally {
     isRegenerating.value = false;
   }

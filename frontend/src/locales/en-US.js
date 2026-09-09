@@ -7,6 +7,28 @@ export default {
     logout: 'Log Out',
     change_password: 'Change Password'
   },
+  api_token: {
+    nav_btn: 'API Token',
+    modal_title: 'API Management',
+    switch_title: 'API Access',
+    status_enabled: 'Enabled',
+    status_disabled: 'Disabled (Secure by default)',
+    btn_enable: 'Enable',
+    btn_disable: 'Disable',
+    hint_disabled: 'Disabled by default for security. Enable to allow external apps.',
+    hint_enabled: 'Active. External clients can query network data using this token.',
+    token_label: 'Read-only Token',
+    token_disabled_tag: 'Inactive',
+    copy_btn: 'Copy',
+    copied: 'Copied!',
+    regenerate_title: 'Reset Token',
+    regenerate_hint: 'Old token will expire immediately upon reset.',
+    regenerate_btn: 'Regenerate',
+    regenerate_confirm: 'Reset API Token? Connected clients must be updated.',
+    regenerate_success: 'API Token reset successfully!',
+    enable_success: 'API access enabled',
+    disable_success: 'API access disabled'
+  },
   common: {
     copy: 'Copy',
     copied: 'Copied to clipboard!',

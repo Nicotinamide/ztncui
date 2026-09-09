@@ -7,6 +7,28 @@ export default {
     logout: '退出登录',
     change_password: '修改密码'
   },
+  api_token: {
+    nav_btn: 'API Token',
+    modal_title: 'API 接口管理',
+    switch_title: 'API 访问权限',
+    status_enabled: '已开启',
+    status_disabled: '已关闭 (默认安全)',
+    btn_enable: '开启',
+    btn_disable: '关闭',
+    hint_disabled: '默认关闭保护。开启后允许桌面微件与外部脚本接入。',
+    hint_enabled: '已启用。外部客户端可凭此只读 Token 查询网络数据。',
+    token_label: '只读 Token',
+    token_disabled_tag: '未开启',
+    copy_btn: '复制',
+    copied: '已复制！',
+    regenerate_title: '重置 Token',
+    regenerate_hint: '重置后旧 Token 立即失效。',
+    regenerate_btn: '重新生成',
+    regenerate_confirm: '确定重置 API Token？已配置的客户端需同步更新。',
+    regenerate_success: 'Token 重置成功！',
+    enable_success: 'API 访问已开启',
+    disable_success: 'API 访问已关闭'
+  },
   common: {
     copy: '复制',
     copied: '已复制到剪贴板！',
