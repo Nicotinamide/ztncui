@@ -75,63 +75,65 @@
     </div>
 
     <!-- API Token Modal -->
-    <div v-if="showTokenModal" class="modal-overlay" @click.self="showTokenModal = false">
-      <div class="modal-content" style="max-width: 520px;">
-        <div class="modal-header">
-          <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
-            <span>🔑</span>
-            <span>API Token 接口凭据管理</span>
-          </h3>
-          <button @click="showTokenModal = false" style="background: transparent; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer;">✕</button>
-        </div>
+    <Teleport to="body">
+      <div v-if="showTokenModal" class="modal-overlay" @click.self="showTokenModal = false">
+        <div class="modal-content" style="max-width: 520px;">
+          <div class="modal-header">
+            <h3 style="margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+              <span>🔑</span>
+              <span>API Token 接口凭据管理</span>
+            </h3>
+            <button @click="showTokenModal = false" style="background: transparent; border: none; font-size: 18px; color: var(--text-muted); cursor: pointer;">✕</button>
+          </div>
 
-        <div class="modal-body">
-          <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-top: 0; margin-bottom: 16px;">
-            此 API Token 专用于 <strong>SysMonitor 桌面微件</strong> 或自动化脚本调用控制器接口（只读鉴权）。长效有效，不受 Web 页面退出或重启影响。
-          </p>
+          <div class="modal-body">
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-top: 0; margin-bottom: 16px;">
+              此 API Token 专用于 <strong>SysMonitor 桌面微件</strong> 或自动化脚本调用控制器接口（只读鉴权）。长效有效，不受 Web 页面退出或重启影响。
+            </p>
 
-          <!-- Token Row -->
-          <div style="margin-bottom: 16px;">
-            <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px;">
-              控制器只读 Token
-            </label>
-            <div style="display: flex; gap: 8px;">
-              <div style="flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: var(--radius-sm); padding: 8px 12px; font-family: monospace; font-size: 13px; color: #38bdf8; word-break: break-all; display: flex; align-items: center; justify-content: space-between;">
-                <span>{{ isTokenVisible ? apiToken : maskedToken }}</span>
-                <button
-                  @click="isTokenVisible = !isTokenVisible"
-                  style="background: transparent; border: none; cursor: pointer; color: #94a3b8; font-size: 14px; padding: 2px;"
-                  :title="isTokenVisible ? '隐藏 Token' : '显示完整 Token'"
-                >
-                  {{ isTokenVisible ? '🙈' : '👁' }}
+            <!-- Token Row -->
+            <div style="margin-bottom: 16px;">
+              <label style="display: block; font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 6px;">
+                控制器只读 Token
+              </label>
+              <div style="display: flex; gap: 8px;">
+                <div style="flex: 1; background: #0f172a; border: 1px solid #334155; border-radius: var(--radius-sm); padding: 8px 12px; font-family: monospace; font-size: 13px; color: #38bdf8; word-break: break-all; display: flex; align-items: center; justify-content: space-between;">
+                  <span>{{ isTokenVisible ? apiToken : maskedToken }}</span>
+                  <button
+                    @click="isTokenVisible = !isTokenVisible"
+                    style="background: transparent; border: none; cursor: pointer; color: #94a3b8; font-size: 14px; padding: 2px;"
+                    :title="isTokenVisible ? '隐藏 Token' : '显示完整 Token'"
+                  >
+                    {{ isTokenVisible ? '🙈' : '👁' }}
+                  </button>
+                </div>
+                <button class="btn btn-primary" @click="copyToken" style="white-space: nowrap;">
+                  <span>📋</span>
+                  <span>{{ copyBtnText }}</span>
                 </button>
               </div>
-              <button class="btn btn-primary" @click="copyToken" style="white-space: nowrap;">
-                <span>📋</span>
-                <span>{{ copyBtnText }}</span>
-              </button>
             </div>
-          </div>
 
-          <!-- Regenerate Box -->
-          <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-              <div>
-                <div style="font-size: 13px; font-weight: 600; color: #dc2626;">轮转 / 重置 Token</div>
-                <div style="font-size: 11.5px; color: #7f1d1d; margin-top: 2px;">若怀疑 Token 泄露可重新生成。重新生成后旧 Token 将立即失效。</div>
+            <!-- Regenerate Box -->
+            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-sm); padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <div>
+                  <div style="font-size: 13px; font-weight: 600; color: #dc2626;">轮转 / 重置 Token</div>
+                  <div style="font-size: 11.5px; color: #7f1d1d; margin-top: 2px;">若怀疑 Token 泄露可重新生成。重新生成后旧 Token 将立即失效。</div>
+                </div>
+                <button class="btn btn-sm btn-danger" @click="handleRegenerate" :disabled="isRegenerating" style="white-space: nowrap;">
+                  {{ isRegenerating ? '生成中...' : '重新生成' }}
+                </button>
               </div>
-              <button class="btn btn-sm btn-danger" @click="handleRegenerate" :disabled="isRegenerating" style="white-space: nowrap;">
-                {{ isRegenerating ? '生成中...' : '重新生成' }}
-              </button>
             </div>
           </div>
-        </div>
 
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="showTokenModal = false">关闭</button>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" @click="showTokenModal = false">关闭</button>
+          </div>
         </div>
       </div>
-    </div>
+    </Teleport>
   </nav>
 </template>
 

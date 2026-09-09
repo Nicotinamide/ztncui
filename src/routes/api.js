@@ -492,7 +492,7 @@ async function pMap(items, mapper, concurrency = 10) {
 }
 
 const membersCache = new Map();
-const MEMBERS_CACHE_TTL = 3000; // 3 seconds
+const MEMBERS_CACHE_TTL = 30000; // 30 seconds cache for rapid widget/browser queries
 
 function invalidateMembersCache(nwid) {
   if (nwid) membersCache.delete(nwid);
@@ -531,7 +531,7 @@ router.get('/networks/:nwid/members', requireAuth, async (req, res) => {
 
     const ids = (typeof member_ids === 'object' && member_ids !== null) ? Object.keys(member_ids) : [];
 
-    // Load member details in controlled batches of 10 to avoid stalling ZeroTier daemon
+    // Load member details in controlled batches of 25 for high responsiveness
     const memberResults = await pMap(ids, async id => {
       try {
         const [member, name] = await Promise.all([
@@ -550,7 +550,7 @@ router.get('/networks/:nwid/members', requireAuth, async (req, res) => {
       } catch {
         return null;
       }
-    }, 12);
+    }, 25);
 
     const members = memberResults.filter(Boolean);
     membersCache.set(nwid, { members, zt_address, timestamp: now });
