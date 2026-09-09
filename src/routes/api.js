@@ -128,7 +128,46 @@ function saveApiToken(newToken) {
   return false;
 }
 
+// --- API Master Switch Management (Default: Disabled for security) ---
+function getApiEnabledPaths() {
+  return [
+    path.join(process.cwd(), 'etc', 'api_enabled.secret'),
+    path.join(__dirname, '..', 'etc', 'api_enabled.secret'),
+    path.join(__dirname, '..', '..', 'etc', 'api_enabled.secret')
+  ];
+}
+
+function isApiEnabled() {
+  if (process.env.API_ENABLED !== undefined) {
+    return process.env.API_ENABLED === 'true' || process.env.API_ENABLED === '1';
+  }
+  for (const p of getApiEnabledPaths()) {
+    try {
+      if (fs.existsSync(p)) {
+        const s = fs.readFileSync(p, 'utf8').trim();
+        return s === '1' || s === 'true';
+      }
+    } catch {}
+  }
+  return false; // Security default: Disabled by default!
+}
+
+function saveApiEnabled(enabled) {
+  for (const p of getApiEnabledPaths()) {
+    try {
+      const dir = path.dirname(p);
+      if (fs.existsSync(dir)) {
+        fs.writeFileSync(p, enabled ? '1' : '0', { mode: 0o600, encoding: 'utf8' });
+        console.log(`[API] Saved API enabled state (${enabled}) in ${p}`);
+        return true;
+      }
+    } catch {}
+  }
+  return false;
+}
+
 let API_TOKEN = getApiToken();
+let API_ENABLED = isApiEnabled();
 
 // --- Auth Middleware (Supports Session Cookie and Bearer API Token) ---
 function requireAuth(req, res, next) {
@@ -145,6 +184,12 @@ function requireAuth(req, res, next) {
   }
 
   if (candidateToken && candidateToken === API_TOKEN) {
+    if (!API_ENABLED) {
+      return res.status(403).json({
+        success: false,
+        error: 'API 访问已被管理员关闭，请登录 Web 控制台在导航栏手动开启 (API access is disabled by admin)'
+      });
+    }
     req.isApiCaller = true;
     return next();
   }
@@ -241,9 +286,20 @@ router.get('/auth/me', (req, res) => {
 
 router.get('/auth/token', (req, res) => {
   if (req.session && req.session.user) {
-    return res.json({ success: true, token: API_TOKEN });
+    return res.json({ success: true, token: API_TOKEN, enabled: API_ENABLED });
   }
   return res.status(401).json({ success: false, error: 'Unauthorized' });
+});
+
+router.post('/auth/token/toggle', (req, res) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  const enabled = !!req.body.enabled;
+  API_ENABLED = enabled;
+  saveApiEnabled(enabled);
+  console.log(`[API] API access changed to ${enabled} by user ${req.session.user.name}`);
+  return res.json({ success: true, enabled: API_ENABLED, token: API_TOKEN });
 });
 
 router.post('/auth/token/regenerate', (req, res) => {
@@ -254,7 +310,7 @@ router.post('/auth/token/regenerate', (req, res) => {
   saveApiToken(newToken);
   API_TOKEN = newToken;
   console.log(`[API] Regenerated API Token by user ${req.session.user.name}`);
-  return res.json({ success: true, token: API_TOKEN });
+  return res.json({ success: true, token: API_TOKEN, enabled: API_ENABLED });
 });
 
 // ==========================================

@@ -44,6 +44,7 @@ export const api = {
   logout: () => request('/auth/logout', { method: 'POST' }),
   getMe: () => request('/auth/me'),
   getApiToken: () => request('/auth/token'),
+  toggleApiAccess: (enabled) => request('/auth/token/toggle', { method: 'POST', body: { enabled } }),
   regenerateApiToken: () => request('/auth/token/regenerate', { method: 'POST' }),
 
   // Status & Peers
