@@ -51,6 +51,8 @@ export default {
     page_of: '第 {cur} / {total} 页',
     per_page: '每页条数',
     items_per_page: '{count} 条/页',
+    all: '全部',
+    show_all: '显示全部 ({total} 条)',
     unnamed_network: '未命名网络'
   },
   login: {
@@ -167,6 +169,12 @@ export default {
     members_subtitle: '管理已加入此虚拟网络的设备节点与授权权限',
     members_loading: '正在加载已连接设备与成员列表...',
     members_page_stat: '共 {total} 个成员，当前显示第 {start} ~ {end} 个',
+    all_members_shown: '共 {total} 个成员 (已显示全部)',
+    filter_all: '全部',
+    filter_auth: '已授权',
+    filter_unauth: '未授权',
+    filter_online: '在线',
+    filter_offline: '离线',
     preview_title: '配置预览:',
     preview_route: '路由规则:',
     preview_pool: 'IP 分配池:',

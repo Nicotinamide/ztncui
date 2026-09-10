@@ -51,6 +51,8 @@ export default {
     page_of: 'Page {cur} of {total}',
     per_page: 'Per page',
     items_per_page: '{count} / page',
+    all: 'All',
+    show_all: 'Show All ({total})',
     unnamed_network: 'Unnamed Network'
   },
   login: {
@@ -167,6 +169,12 @@ export default {
     members_subtitle: 'Manage devices, authorization, and virtual IPs in this network',
     members_loading: 'Loading connected members and device details...',
     members_page_stat: 'Total {total} members, showing {start} ~ {end}',
+    all_members_shown: 'Total {total} members (Showing All)',
+    filter_all: 'All',
+    filter_auth: 'Authorized',
+    filter_unauth: 'Unauthorized',
+    filter_online: 'Online',
+    filter_offline: 'Offline',
     preview_title: 'Configuration Preview:',
     preview_route: 'Route Rule:',
     preview_pool: 'IP Pool:',

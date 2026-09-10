@@ -130,6 +130,32 @@
         </div>
       </div>
 
+      <!-- Quick Filter Bar -->
+      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;">
+        <button
+          v-for="filter in memberFilters"
+          :key="filter.id"
+          type="button"
+          :class="['btn btn-sm', currentFilter === filter.id ? 'btn-primary' : 'btn-secondary']"
+          @click="currentFilter = filter.id"
+          style="font-size: 12px; padding: 4px 12px; border-radius: 16px; display: inline-flex; align-items: center;"
+        >
+          <span>{{ filter.label }}</span>
+          <span
+            class="badge"
+            :style="{
+              background: currentFilter === filter.id ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.06)',
+              color: currentFilter === filter.id ? '#ffffff' : 'inherit',
+              marginLeft: '6px',
+              fontSize: '11px',
+              padding: '1px 6px'
+            }"
+          >
+            {{ filter.count }}
+          </span>
+        </button>
+      </div>
+
       <!-- Members Loading Spinner inside tab -->
       <div v-if="membersLoading" style="text-align: center; padding: 48px 20px;">
         <div class="loading-spinner"></div>
@@ -143,12 +169,22 @@
             <thead>
               <tr>
                 <th style="width: 4%;"></th>
-                <th style="width: 18%;">{{ t('detail.col_name') }}</th>
-                <th style="width: 14%;">{{ t('detail.col_node') }}</th>
-                <th style="width: 8%; text-align: center;">{{ t('detail.col_auth') }}</th>
+                <th style="width: 18%; cursor: pointer;" @click="toggleSort('name')">
+                  {{ t('detail.col_name') }} {{ getSortIcon('name') }}
+                </th>
+                <th style="width: 14%; cursor: pointer;" @click="toggleSort('id')">
+                  {{ t('detail.col_node') }} {{ getSortIcon('id') }}
+                </th>
+                <th style="width: 8%; text-align: center; cursor: pointer;" @click="toggleSort('auth')">
+                  {{ t('detail.col_auth') }} {{ getSortIcon('auth') }}
+                </th>
                 <th style="width: 8%; text-align: center;">{{ t('detail.col_bridge') }}</th>
-                <th style="width: 20%;">{{ t('detail.col_managed_ips') }}</th>
-                <th style="width: 14%;">{{ t('detail.col_status') }}</th>
+                <th style="width: 20%; cursor: pointer;" @click="toggleSort('ip')">
+                  {{ t('detail.col_managed_ips') }} {{ getSortIcon('ip') }}
+                </th>
+                <th style="width: 14%; cursor: pointer;" @click="toggleSort('status')">
+                  {{ t('detail.col_status') }} {{ getSortIcon('status') }}
+                </th>
                 <th style="width: 14%;">{{ t('detail.col_endpoint') }}</th>
               </tr>
             </thead>
@@ -255,7 +291,10 @@
         <!-- Pagination & Page Size Toolbar -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 10px 4px 4px 4px; font-size: 13px; color: var(--text-muted); flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--border);">
           <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
-            <span>
+            <span v-if="pageSize === 0">
+              {{ t('detail.all_members_shown', { total: filteredMembers.length }) }}
+            </span>
+            <span v-else>
               {{ t('detail.members_page_stat', { total: filteredMembers.length, start: filteredMembers.length ? (currentPage - 1) * pageSize + 1 : 0, end: Math.min(currentPage * pageSize, filteredMembers.length) }) }}
             </span>
             <div style="display: flex; align-items: center; gap: 6px;">
@@ -265,15 +304,15 @@
                 class="form-control"
                 style="width: auto; height: 30px; padding: 2px 8px; font-size: 12px; cursor: pointer;"
               >
-                <option :value="10">{{ t('common.items_per_page', { count: 10 }) }}</option>
                 <option :value="20">{{ t('common.items_per_page', { count: 20 }) }}</option>
                 <option :value="50">{{ t('common.items_per_page', { count: 50 }) }}</option>
                 <option :value="100">{{ t('common.items_per_page', { count: 100 }) }}</option>
+                <option :value="0">{{ t('common.show_all', { total: filteredMembers.length }) }}</option>
               </select>
             </div>
           </div>
 
-          <div v-if="totalPages > 1" style="display: flex; gap: 8px; align-items: center;">
+          <div v-if="totalPages > 1 && pageSize > 0" style="display: flex; gap: 8px; align-items: center;">
             <button class="btn btn-secondary btn-sm" :disabled="currentPage <= 1" @click="currentPage--">{{ t('common.prev_page') }}</button>
             <span>{{ t('common.page_of', { cur: currentPage, total: totalPages }) }}</span>
             <button class="btn btn-secondary btn-sm" :disabled="currentPage >= totalPages" @click="currentPage++">{{ t('common.next_page') }}</button>
@@ -576,7 +615,59 @@ const memberSearch = ref('');
 
 // Pagination
 const currentPage = ref(1);
-const pageSize = ref(20);
+const pageSize = ref(100);
+
+// Filtering & Sorting
+const currentFilter = ref('all');
+const sortKey = ref('default'); // 'default', 'name', 'id', 'auth', 'ip', 'status'
+const sortAsc = ref(true);
+
+function isOnline(m) {
+  if (m.id === ztAddress.value) return true;
+  return !!(m.peer && m.peer.latency !== -1 && m.peer.latency !== undefined);
+}
+
+const memberFilters = computed(() => {
+  const all = members.value.length;
+  const auth = members.value.filter(m => m.authorized).length;
+  const unauth = members.value.filter(m => !m.authorized).length;
+  const online = members.value.filter(m => isOnline(m)).length;
+  const offline = all - online;
+  return [
+    { id: 'all', label: t('detail.filter_all'), count: all },
+    { id: 'auth', label: t('detail.filter_auth'), count: auth },
+    { id: 'unauth', label: t('detail.filter_unauth'), count: unauth },
+    { id: 'online', label: t('detail.filter_online'), count: online },
+    { id: 'offline', label: t('detail.filter_offline'), count: offline },
+  ];
+});
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    if (sortAsc.value) {
+      sortAsc.value = false;
+    } else {
+      sortKey.value = 'default';
+      sortAsc.value = true;
+    }
+  } else {
+    sortKey.value = key;
+    sortAsc.value = true;
+  }
+}
+
+function getSortIcon(key) {
+  if (sortKey.value !== key) return '↕️';
+  return sortAsc.value ? '↑' : '↓';
+}
+
+function ipToNumber(ip) {
+  if (!ip) return 0xFFFFFFFF;
+  const clean = ip.split('/')[0];
+  const parts = clean.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(isNaN)) return 0xFFFFFFFF;
+  return ((parts[0] << 24) >>> 0) + (parts[1] << 16) + (parts[2] << 8) + parts[3];
+}
 
 // Name Editing
 const editingName = ref(false);
@@ -623,25 +714,80 @@ const tabList = computed(() => [
 ]);
 
 const filteredMembers = computed(() => {
+  let list = members.value || [];
+
+  // 1. Filter by category
+  if (currentFilter.value === 'auth') {
+    list = list.filter(m => m.authorized);
+  } else if (currentFilter.value === 'unauth') {
+    list = list.filter(m => !m.authorized);
+  } else if (currentFilter.value === 'online') {
+    list = list.filter(m => isOnline(m));
+  } else if (currentFilter.value === 'offline') {
+    list = list.filter(m => !isOnline(m));
+  }
+
+  // 2. Filter by keyword
   const q = memberSearch.value.trim().toLowerCase();
-  if (!q) return members.value;
-  return members.value.filter(m =>
-    (m.name && m.name.toLowerCase().includes(q)) ||
-    (m.id && m.id.toLowerCase().includes(q)) ||
-    (m.ipAssignments && m.ipAssignments.some(ip => ip.includes(q)))
-  );
+  if (q) {
+    list = list.filter(m =>
+      (m.name && m.name.toLowerCase().includes(q)) ||
+      (m.id && m.id.toLowerCase().includes(q)) ||
+      (m.ipAssignments && m.ipAssignments.some(ip => ip.includes(q)))
+    );
+  }
+
+  // 3. Sorting
+  return [...list].sort((a, b) => {
+    if (sortKey.value === 'default') {
+      if (a.id === ztAddress.value) return -1;
+      if (b.id === ztAddress.value) return 1;
+      const ipA = (a.ipAssignments && a.ipAssignments[0]) || '';
+      const ipB = (b.ipAssignments && b.ipAssignments[0]) || '';
+      if (ipA && ipB) {
+        const numA = ipToNumber(ipA);
+        const numB = ipToNumber(ipB);
+        if (numA !== numB) return numA - numB;
+      } else if (ipA && !ipB) {
+        return -1;
+      } else if (!ipA && ipB) {
+        return 1;
+      }
+      return (a.name || a.id).localeCompare(b.name || b.id);
+    }
+
+    let cmp = 0;
+    if (sortKey.value === 'name') {
+      cmp = (a.name || '').localeCompare(b.name || '');
+    } else if (sortKey.value === 'id') {
+      cmp = (a.id || '').localeCompare(b.id || '');
+    } else if (sortKey.value === 'auth') {
+      cmp = (a.authorized ? 1 : 0) - (b.authorized ? 1 : 0);
+    } else if (sortKey.value === 'ip') {
+      const numA = ipToNumber((a.ipAssignments && a.ipAssignments[0]) || '');
+      const numB = ipToNumber((b.ipAssignments && b.ipAssignments[0]) || '');
+      cmp = numA - numB;
+    } else if (sortKey.value === 'status') {
+      const scoreA = a.id === ztAddress.value ? 2 : (isOnline(a) ? 1 : 0);
+      const scoreB = b.id === ztAddress.value ? 2 : (isOnline(b) ? 1 : 0);
+      cmp = scoreB - scoreA;
+    }
+    return sortAsc.value ? cmp : -cmp;
+  });
 });
 
 const totalPages = computed(() => {
+  if (pageSize.value === 0) return 1;
   return Math.ceil(filteredMembers.value.length / pageSize.value) || 1;
 });
 
 const paginatedMembers = computed(() => {
+  if (pageSize.value === 0) return filteredMembers.value;
   const start = (currentPage.value - 1) * pageSize.value;
   return filteredMembers.value.slice(start, start + pageSize.value);
 });
 
-watch([memberSearch, pageSize], () => {
+watch([memberSearch, currentFilter, pageSize], () => {
   currentPage.value = 1;
 });
 
